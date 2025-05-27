@@ -1,0 +1,269 @@
+import * as yup from 'yup';
+
+// Schema per login
+export const loginSchema = yup.object({
+  email: yup
+    .string()
+    .email('Inserisci un\'email valida')
+    .required('L\'email è obbligatoria'),
+  password: yup
+    .string()
+    .required('La password è obbligatoria')
+    .min(6, 'La password deve avere almeno 6 caratteri'),
+});
+
+// Schema per registrazione
+export const registerSchema = yup.object({
+  name: yup
+    .string()
+    .required('Il nome è obbligatorio')
+    .min(2, 'Il nome deve avere almeno 2 caratteri')
+    .max(50, 'Il nome non può superare i 50 caratteri')
+    .matches(/^[a-zA-ZÀ-ÿ\s]+$/, 'Il nome può contenere solo lettere e spazi'),
+  email: yup
+    .string()
+    .email('Inserisci un\'email valida')
+    .required('L\'email è obbligatoria'),
+  password: yup
+    .string()
+    .required('La password è obbligatoria')
+    .min(8, 'La password deve avere almeno 8 caratteri')
+    .matches(/[A-Z]/, 'La password deve contenere almeno una maiuscola')
+    .matches(/[a-z]/, 'La password deve contenere almeno una minuscola')
+    .matches(/[0-9]/, 'La password deve contenere almeno un numero')
+    .matches(/[^A-Za-z0-9]/, 'La password deve contenere almeno un carattere speciale'),
+  confirmPassword: yup
+    .string()
+    .required('Conferma la password')
+    .oneOf([yup.ref('password')], 'Le password non coincidono'),
+  familyName: yup
+    .string()
+    .when('createFamily', {
+      is: true,
+      then: (schema) => schema
+        .required('Il nome della famiglia è obbligatorio')
+        .min(2, 'Il nome famiglia deve avere almeno 2 caratteri')
+        .max(50, 'Il nome famiglia non può superare i 50 caratteri'),
+      otherwise: (schema) => schema.notRequired(),
+    }),
+  createFamily: yup.boolean(),
+});
+
+// Schema per reset password
+export const forgotPasswordSchema = yup.object({
+  email: yup
+    .string()
+    .email('Inserisci un\'email valida')
+    .required('L\'email è obbligatoria'),
+});
+
+// Schema per nuova password
+export const resetPasswordSchema = yup.object({
+  password: yup
+    .string()
+    .required('La password è obbligatoria')
+    .min(8, 'La password deve avere almeno 8 caratteri')
+    .matches(/[A-Z]/, 'La password deve contenere almeno una maiuscola')
+    .matches(/[a-z]/, 'La password deve contenere almeno una minuscola')
+    .matches(/[0-9]/, 'La password deve contenere almeno un numero')
+    .matches(/[^A-Za-z0-9]/, 'La password deve contenere almeno un carattere speciale'),
+  confirmPassword: yup
+    .string()
+    .required('Conferma la password')
+    .oneOf([yup.ref('password')], 'Le password non coincidono'),
+});
+
+// Schema per creazione famiglia
+export const createFamilySchema = yup.object({
+  name: yup
+    .string()
+    .required('Il nome della famiglia è obbligatorio')
+    .min(2, 'Il nome famiglia deve avere almeno 2 caratteri')
+    .max(50, 'Il nome famiglia non può superare i 50 caratteri'),
+  description: yup
+    .string()
+    .max(200, 'La descrizione non può superare i 200 caratteri'),
+});
+
+// Schema per aggiornamento famiglia
+export const updateFamilySchema = yup.object({
+  name: yup
+    .string()
+    .required('Il nome della famiglia è obbligatorio')
+    .min(2, 'Il nome famiglia deve avere almeno 2 caratteri')
+    .max(100, 'Il nome famiglia non può superare i 100 caratteri'),
+  description: yup
+    .string()
+    .max(500, 'La descrizione non può superare i 500 caratteri'),
+  currency: yup
+    .string()
+    .oneOf(['EUR', 'USD', 'GBP'], 'Valuta non supportata'),
+});
+
+// Schema per invito membro famiglia
+export const inviteMemberSchema = yup.object({
+  email: yup
+    .string()
+    .email('Inserisci un\'email valida')
+    .required('L\'email è obbligatoria'),
+  role: yup
+    .string()
+    .oneOf(['admin', 'member'], 'Ruolo non valido')
+    .required('Il ruolo è obbligatorio'),
+});
+
+// Schema per spesa
+export const expenseSchema = yup.object({
+  amount: yup
+    .number()
+    .required('L\'importo è obbligatorio')
+    .positive('L\'importo deve essere positivo')
+    .max(999999.99, 'L\'importo non può superare €999,999.99'),
+  description: yup
+    .string()
+    .required('La descrizione è obbligatoria')
+    .min(3, 'La descrizione deve avere almeno 3 caratteri')
+    .max(200, 'La descrizione non può superare i 200 caratteri'),
+  categoryId: yup
+    .string()
+    .required('La categoria è obbligatoria'),
+  date: yup
+    .date()
+    .required('La data è obbligatoria')
+    .max(new Date(), 'La data non può essere futura'),
+  notes: yup
+    .string()
+    .max(500, 'Le note non possono superare i 500 caratteri'),
+  tags: yup
+    .array()
+    .of(yup.string().max(20, 'Ogni tag non può superare i 20 caratteri'))
+    .max(10, 'Non puoi aggiungere più di 10 tag'),
+});
+
+// Schema per entrata
+export const incomeSchema = yup.object({
+  amount: yup
+    .number()
+    .required('L\'importo è obbligatorio')
+    .positive('L\'importo deve essere positivo')
+    .max(999999.99, 'L\'importo non può superare €999,999.99'),
+  description: yup
+    .string()
+    .required('La descrizione è obbligatoria')
+    .min(3, 'La descrizione deve avere almeno 3 caratteri')
+    .max(200, 'La descrizione non può superare i 200 caratteri'),
+  source: yup
+    .string()
+    .required('La fonte è obbligatoria')
+    .oneOf([
+      'salary', 'freelance', 'bonus', 'investment', 
+      'rental', 'gift', 'refund', 'other'
+    ], 'Fonte non valida'),
+  date: yup
+    .date()
+    .required('La data è obbligatoria')
+    .max(new Date(), 'La data non può essere futura'),
+  isRecurring: yup.boolean(),
+  recurringType: yup
+    .string()
+    .when('isRecurring', {
+      is: true,
+      then: (schema) => schema
+        .required('Il tipo di ricorrenza è obbligatorio')
+        .oneOf(['monthly', 'weekly', 'yearly'], 'Tipo di ricorrenza non valido'),
+      otherwise: (schema) => schema.notRequired(),
+    }),
+});
+
+// Schema per categoria
+export const categorySchema = yup.object({
+  name: yup
+    .string()
+    .required('Il nome della categoria è obbligatorio')
+    .min(2, 'Il nome deve avere almeno 2 caratteri')
+    .max(50, 'Il nome non può superare i 50 caratteri'),
+  color: yup
+    .string()
+    .required('Il colore è obbligatorio')
+    .matches(/^#[0-9A-F]{6}$/i, 'Il colore deve essere in formato esadecimale (es. #FF0000)'),
+  icon: yup
+    .string()
+    .required('L\'icona è obbligatoria')
+    .max(50, 'Il nome dell\'icona non può superare i 50 caratteri'),
+});
+
+// Schema per budget
+export const budgetSchema = yup.object({
+  categoryId: yup
+    .string()
+    .required('La categoria è obbligatoria'),
+  amount: yup
+    .number()
+    .required('L\'importo è obbligatorio')
+    .positive('L\'importo deve essere positivo')
+    .max(999999.99, 'L\'importo non può superare €999,999.99'),
+  month: yup
+    .number()
+    .required('Il mese è obbligatorio')
+    .min(1, 'Il mese deve essere tra 1 e 12')
+    .max(12, 'Il mese deve essere tra 1 e 12'),
+  year: yup
+    .number()
+    .required('L\'anno è obbligatorio')
+    .min(2020, 'L\'anno deve essere almeno 2020')
+    .max(2030, 'L\'anno non può essere oltre il 2030'),
+  alertThreshold: yup
+    .number()
+    .min(0, 'La soglia deve essere almeno 0%')
+    .max(100, 'La soglia non può superare il 100%'),
+  autoRenew: yup.boolean(),
+});
+
+// Schema per profilo utente
+export const profileSchema = yup.object({
+  name: yup
+    .string()
+    .required('Il nome è obbligatorio')
+    .min(2, 'Il nome deve avere almeno 2 caratteri')
+    .max(50, 'Il nome non può superare i 50 caratteri')
+    .matches(/^[a-zA-ZÀ-ÿ\s]+$/, 'Il nome può contenere solo lettere e spazi'),
+  email: yup
+    .string()
+    .email('Inserisci un\'email valida')
+    .required('L\'email è obbligatoria'),
+});
+
+// Schema per cambio password
+export const changePasswordSchema = yup.object({
+  currentPassword: yup
+    .string()
+    .required('La password attuale è obbligatoria'),
+  newPassword: yup
+    .string()
+    .required('La nuova password è obbligatoria')
+    .min(8, 'La password deve avere almeno 8 caratteri')
+    .matches(/[A-Z]/, 'La password deve contenere almeno una maiuscola')
+    .matches(/[a-z]/, 'La password deve contenere almeno una minuscola')
+    .matches(/[0-9]/, 'La password deve contenere almeno un numero')
+    .matches(/[^A-Za-z0-9]/, 'La password deve contenere almeno un carattere speciale'),
+  confirmNewPassword: yup
+    .string()
+    .required('Conferma la nuova password')
+    .oneOf([yup.ref('newPassword')], 'Le password non coincidono'),
+});
+
+export default {
+  loginSchema,
+  registerSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  createFamilySchema,
+  updateFamilySchema,
+  inviteMemberSchema,
+  expenseSchema,
+  incomeSchema,
+  categorySchema,
+  budgetSchema,
+  profileSchema,
+  changePasswordSchema,
+}; 
