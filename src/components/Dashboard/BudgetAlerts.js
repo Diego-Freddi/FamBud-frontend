@@ -10,7 +10,6 @@ import {
   Typography,
   Box,
   LinearProgress,
-  Chip,
   Alert,
   CircularProgress,
 } from '@mui/material';
@@ -199,28 +198,34 @@ const BudgetAlerts = ({ data, loading = false, title = "Stato Budget" }) => {
               
               <ListItemText
                 primary={
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="body2" fontWeight="medium">
+                  <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <Typography variant="body2" fontWeight="medium" component="span">
                       {budget.category}
                     </Typography>
-                    <Chip
-                      label={getStatusText(budget.status, budget.percentage)}
-                      size="small"
-                      color={getStatusColor(budget.status)}
-                      variant="outlined"
-                    />
-                  </Box>
+                    <span
+                      style={{
+                        fontSize: '0.75rem',
+                        padding: '2px 8px',
+                        border: `1px solid ${budget.status === 'safe' ? '#4caf50' : budget.status === 'warning' ? '#ff9800' : '#f44336'}`,
+                        borderRadius: '12px',
+                        backgroundColor: budget.status === 'safe' ? '#e8f5e8' : budget.status === 'warning' ? '#fff3e0' : '#ffebee',
+                        color: budget.status === 'safe' ? '#2e7d32' : budget.status === 'warning' ? '#e65100' : '#c62828',
+                      }}
+                    >
+                      {getStatusText(budget.status, budget.percentage)}
+                    </span>
+                  </span>
                 }
                 secondary={
-                  <Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                      <Typography variant="caption" color="text.secondary">
+                  <span>
+                    <span style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <Typography variant="caption" color="text.secondary" component="span">
                         {formatAmount(budget.spentAmount)} di {formatAmount(budget.budgetAmount)}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" color="text.secondary" component="span">
                         Rimanenti: {formatAmount(budget.budgetAmount - budget.spentAmount)}
                       </Typography>
-                    </Box>
+                    </span>
                     <LinearProgress
                       variant="determinate"
                       value={Math.min(budget.percentage, 100)}
@@ -231,7 +236,7 @@ const BudgetAlerts = ({ data, loading = false, title = "Stato Budget" }) => {
                         backgroundColor: 'grey.200',
                       }}
                     />
-                  </Box>
+                  </span>
                 }
               />
             </ListItem>

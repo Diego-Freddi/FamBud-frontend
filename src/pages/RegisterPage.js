@@ -56,7 +56,7 @@ const RegisterPage = () => {
   // Pulisci errori quando il componente si monta
   useEffect(() => {
     clearError();
-  }, [clearError]);
+  }, []); // Array vuoto - esegui solo al mount
 
   // Gestione submit
   const onSubmit = async (data) => {

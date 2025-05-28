@@ -16,6 +16,8 @@ import CreateFamilyPage from './pages/CreateFamilyPage';
 import DashboardPage from './pages/DashboardPage';
 import ExpensesPage from './pages/ExpensesPage';
 import IncomesPage from './pages/IncomesPage';
+import CategoriesPage from './pages/CategoriesPage';
+import BudgetsPage from './pages/BudgetsPage';
 
 function App() {
   return (
@@ -53,8 +55,8 @@ function App() {
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="expenses" element={<ExpensesPage />} />
               <Route path="incomes" element={<IncomesPage />} />
-              <Route path="budgets" element={<div>Pagina Budget (da implementare)</div>} />
-              <Route path="categories" element={<div>Pagina Categorie (da implementare)</div>} />
+              <Route path="budgets" element={<BudgetsPage />} />
+              <Route path="categories" element={<CategoriesPage />} />
               <Route path="family" element={<div>Pagina Famiglia (da implementare)</div>} />
               <Route path="settings" element={<div>Pagina Impostazioni (da implementare)</div>} />
               <Route path="profile" element={<div>Pagina Profilo (da implementare)</div>} />

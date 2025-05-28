@@ -89,14 +89,9 @@ const ExpensesPage = () => {
     loading: categoriesLoading 
   } = useApi(categoryAPI.getCategories, [], true);
 
-  // Carica spese con filtri
-  const { 
-    data: expensesData, 
-    loading: expensesLoading, 
-    error: expensesError,
-    refetch: refetchExpenses 
-  } = useApi(
-    () => expenseAPI.getExpenses({
+  // Funzione stabilizzata per caricare spese
+  const fetchExpenses = useCallback(() => {
+    return expenseAPI.getExpenses({
       page,
       limit: 10,
       search: filters.search || undefined,
@@ -107,14 +102,21 @@ const ExpensesPage = () => {
       maxAmount: filters.maxAmount || undefined,
       sortBy,
       sortOrder,
-    }),
-    [page, filters, sortBy, sortOrder],
-    true
-  );
+    });
+  }, [page, filters, sortBy, sortOrder]);
+
+  // Carica spese con filtri
+  const { 
+    data: expensesData, 
+    loading: expensesLoading, 
+    error: expensesError,
+    refetch: refetchExpenses 
+  } = useApi(fetchExpenses, [page, filters, sortBy, sortOrder], true);
 
   const expenses = expensesData?.data?.expenses || [];
-  const totalPages = expensesData?.data?.totalPages || 1;
-  const totalExpenses = expensesData?.data?.totalExpenses || 0;
+  const pagination = expensesData?.data?.pagination || {};
+  const totalPages = pagination.pages || 1;
+  const totalExpenses = pagination.total || 0;
   const categories = categoriesData?.data?.categories || [];
 
   // Gestione filtri
@@ -179,7 +181,7 @@ const ExpensesPage = () => {
     refetchExpenses();
     setFormOpen(false);
     setEditingExpense(null);
-  }, [refetchExpenses]);
+  }, []);
 
   // Menu azioni
   const handleMenuOpen = (event, expense) => {

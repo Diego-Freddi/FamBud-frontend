@@ -124,16 +124,19 @@ export const AuthProvider = ({ children }) => {
             },
           });
         } catch (error) {
-          // Token non valido, rimuovi dati
+          console.warn('Token validation failed:', error);
+          
+          // Token non valido, rimuovi dati e forza logout
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           
           dispatch({
             type: AUTH_ACTIONS.LOAD_USER_FAILURE,
-            payload: { error: 'Sessione scaduta' },
+            payload: { error: 'Sessione scaduta, effettua nuovamente il login' },
           });
         }
       } else {
+        // Nessun token, utente non autenticato
         dispatch({
           type: AUTH_ACTIONS.LOAD_USER_FAILURE,
           payload: { error: null },
@@ -206,11 +209,22 @@ export const AuthProvider = ({ children }) => {
 
   // Funzione di logout
   const logout = () => {
-    // Rimuovi dati da localStorage
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    try {
+      // Rimuovi dati da localStorage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('dashboard_last_refresh');
 
-    dispatch({ type: AUTH_ACTIONS.LOGOUT });
+      // Pulisci lo stato
+      dispatch({ type: AUTH_ACTIONS.LOGOUT });
+      
+      // Forza il reload della pagina per pulire completamente lo stato
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Errore durante il logout:', error);
+      // Forza comunque il redirect
+      window.location.href = '/login';
+    }
   };
 
   // Funzione per creare famiglia

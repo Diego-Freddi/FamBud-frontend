@@ -8,6 +8,7 @@ import {
   useMediaQuery,
   Alert,
   CircularProgress,
+  Button,
 } from '@mui/material';
 import {
   AddOutlined,
@@ -19,7 +20,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useDashboardData } from '../hooks/useApi';
+import useDashboardData from '../hooks/useDashboardData';
 import StatsCard from '../components/Dashboard/StatsCard';
 import ExpensesPieChart from '../components/Dashboard/ExpensesPieChart';
 import MonthlyTrendChart from '../components/Dashboard/MonthlyTrendChart';
@@ -33,7 +34,7 @@ const DashboardPage = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
   // Hook per dati reali dalla API
-  const { dashboardData, loading, error, refetch } = useDashboardData();
+  const { data: dashboardData, loading, error, refetch } = useDashboardData();
 
   const currentMonth = new Intl.DateTimeFormat('it-IT', { 
     month: 'long', 
@@ -103,7 +104,13 @@ const DashboardPage = () => {
             color="primary"
             onClick={refetch}
             disabled={loading}
-            sx={{ opacity: loading ? 0.5 : 1 }}
+            sx={{ 
+              opacity: loading ? 0.5 : 1,
+              '&:hover': {
+                transform: 'scale(1.1)',
+              }
+            }}
+            title="Aggiorna dati"
           >
             <RefreshOutlined />
           </Fab>

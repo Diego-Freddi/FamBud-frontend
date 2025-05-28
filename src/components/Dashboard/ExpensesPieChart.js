@@ -18,19 +18,18 @@ import {
   ListItemText,
   CircularProgress,
 } from '@mui/material';
-import { categoryColors } from '../../styles/theme';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const ExpensesPieChart = ({ data, loading = false, title = "Spese per Categoria" }) => {
-  // Processa i dati dall'API
+  // Processa i dati dall'API usando i colori reali delle categorie
   const processChartData = (apiData) => {
     if (!apiData || !Array.isArray(apiData)) return [];
     
     return apiData.map(item => ({
       category: item.categoryName || item.category || 'Sconosciuto',
       amount: item.totalAmount || item.amount || 0,
-      color: categoryColors[item.categoryName?.toLowerCase().replace(/\s+/g, '')] || categoryColors.altro,
+      color: item.color || item.categoryColor || '#6B7280', // Usa il colore reale della categoria
     }));
   };
 
@@ -151,12 +150,12 @@ const ExpensesPieChart = ({ data, loading = false, title = "Spese per Categoria"
                     </ListItemIcon>
                     <ListItemText
                       primary={
-                        <Typography variant="body2" fontWeight="medium">
+                        <Typography variant="body2" fontWeight="medium" component="span">
                           {item.category}
                         </Typography>
                       }
                       secondary={
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" color="text.secondary" component="span">
                           €{item.amount.toFixed(2)} ({percentage}%)
                         </Typography>
                       }

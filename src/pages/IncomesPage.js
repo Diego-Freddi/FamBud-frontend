@@ -86,14 +86,9 @@ const IncomesPage = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedIncome, setSelectedIncome] = useState(null);
 
-  // Carica entrate con filtri
-  const { 
-    data: incomesData, 
-    loading: incomesLoading, 
-    error: incomesError,
-    refetch: refetchIncomes 
-  } = useApi(
-    () => incomeAPI.getIncomes({
+  // Funzione stabilizzata per caricare entrate
+  const fetchIncomes = useCallback(() => {
+    return incomeAPI.getIncomes({
       page,
       limit: 10,
       search: filters.search || undefined,
@@ -105,14 +100,21 @@ const IncomesPage = () => {
       isRecurring: filters.isRecurring !== '' ? filters.isRecurring : undefined,
       sortBy,
       sortOrder,
-    }),
-    [page, filters, sortBy, sortOrder],
-    true
-  );
+    });
+  }, [page, filters, sortBy, sortOrder]);
+
+  // Carica entrate con filtri
+  const { 
+    data: incomesData, 
+    loading: incomesLoading, 
+    error: incomesError,
+    refetch: refetchIncomes 
+  } = useApi(fetchIncomes, [page, filters, sortBy, sortOrder], true);
 
   const incomes = incomesData?.data?.incomes || [];
-  const totalPages = incomesData?.data?.totalPages || 1;
-  const totalIncomes = incomesData?.data?.totalIncomes || 0;
+  const pagination = incomesData?.data?.pagination || {};
+  const totalPages = pagination.pages || 1;
+  const totalIncomes = pagination.total || 0;
 
   // Gestione filtri
   const handleFilterChange = (field, value) => {
@@ -177,7 +179,7 @@ const IncomesPage = () => {
     refetchIncomes();
     setFormOpen(false);
     setEditingIncome(null);
-  }, [refetchIncomes]);
+  }, []);
 
   // Menu azioni
   const handleMenuOpen = (event, income) => {

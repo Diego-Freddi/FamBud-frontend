@@ -32,11 +32,34 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Se il token è scaduto, rimuovilo e reindirizza al login
+    // Log dell'errore per debugging
+    console.warn('API Error:', {
+      status: error.response?.status,
+      url: error.config?.url,
+      method: error.config?.method,
+      message: error.response?.data?.message || error.message
+    });
+
+    // Se il token è scaduto o non valido, rimuovilo e reindirizza al login
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Verifica che sia davvero un problema di autenticazione
+      const errorMessage = error.response?.data?.message || '';
+      const isAuthError = errorMessage.includes('Token') || 
+                         errorMessage.includes('Accesso negato') ||
+                         errorMessage.includes('non valido') ||
+                         errorMessage.includes('scaduto');
+      
+      if (isAuthError) {
+        console.warn('Token authentication failed, logging out:', errorMessage);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('dashboard_last_refresh');
+        
+        // Evita loop infiniti controllando se siamo già nella pagina di login
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+      }
     }
     
     return Promise.reject(error);

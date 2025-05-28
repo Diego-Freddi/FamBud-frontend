@@ -10,7 +10,6 @@ import {
   Avatar,
   Typography,
   Box,
-  Chip,
   IconButton,
   CircularProgress,
 } from '@mui/material';
@@ -86,9 +85,8 @@ const RecentTransactions = ({ data, loading = false, title = "Ultime Transazioni
       return 'success.main';
     }
     
-    // Usa il colore della categoria se disponibile
-    const categoryKey = category?.toLowerCase().replace(/\s+/g, '');
-    return categoryColors[categoryKey] || 'error.main';
+    // Per le spese, usa sempre il colore rosso standard per coerenza con le card
+    return 'error.main';
   };
 
   if (loading) {
@@ -146,36 +144,43 @@ const RecentTransactions = ({ data, loading = false, title = "Ultime Transazioni
               
               <ListItemText
                 primary={
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="body2" fontWeight="medium">
+                  <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="body2" fontWeight="medium" component="span">
                       {transaction.description}
                     </Typography>
                     <Typography
                       variant="body2"
                       fontWeight="bold"
                       color={transaction.type === 'income' ? 'success.main' : 'error.main'}
+                      component="span"
                     >
                       {formatAmount(transaction.amount, transaction.type)}
                     </Typography>
-                  </Box>
+                  </span>
                 }
                 secondary={
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Chip
-                        label={transaction.category}
-                        size="small"
-                        variant="outlined"
-                        sx={{ fontSize: '0.75rem', height: 20 }}
-                      />
-                      <Typography variant="caption" color="text.secondary">
+                  <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span
+                        style={{
+                          fontSize: '0.75rem',
+                          padding: '2px 8px',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '12px',
+                          backgroundColor: '#f5f5f5',
+                          color: '#666',
+                        }}
+                      >
+                        {transaction.category}
+                      </span>
+                      <Typography variant="caption" color="text.secondary" component="span">
                         {transaction.user}
                       </Typography>
-                    </Box>
-                    <Typography variant="caption" color="text.secondary">
+                    </span>
+                    <Typography variant="caption" color="text.secondary" component="span">
                       {formatDate(transaction.date)}
                     </Typography>
-                  </Box>
+                  </span>
                 }
               />
             </ListItem>

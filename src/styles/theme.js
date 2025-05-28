@@ -249,14 +249,14 @@ export const darkTheme = createTheme({
 
 // Colori specifici per categorie (consistenti con il backend)
 export const categoryColors = {
-  alimentari: '#4caf50',     // Verde
-  trasporti: '#2196f3',      // Blu
-  casa: '#ff9800',           // Arancione
-  salute: '#f44336',         // Rosso
-  intrattenimento: '#9c27b0', // Viola
-  abbigliamento: '#e91e63',  // Rosa
-  educazione: '#3f51b5',     // Indaco
-  altro: '#607d8b',          // Grigio blu
+  alimentari: '#10B981',     // Verde (backend)
+  trasporti: '#3B82F6',      // Blu (backend)
+  casa: '#8B5CF6',           // Viola (backend)
+  salute: '#EF4444',         // Rosso (backend)
+  intrattenimento: '#F59E0B', // Arancione (backend)
+  abbigliamento: '#EC4899',  // Rosa (backend)
+  educazione: '#06B6D4',     // Ciano (backend)
+  altro: '#6B7280',          // Grigio (backend)
 };
 
 // Breakpoints personalizzati
