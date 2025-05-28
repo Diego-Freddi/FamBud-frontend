@@ -14,6 +14,8 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import CreateFamilyPage from './pages/CreateFamilyPage';
 import DashboardPage from './pages/DashboardPage';
+import ExpensesPage from './pages/ExpensesPage';
+import IncomesPage from './pages/IncomesPage';
 
 function App() {
   return (
@@ -49,8 +51,8 @@ function App() {
             >
               {/* Route annidate che usano il layout */}
               <Route path="dashboard" element={<DashboardPage />} />
-              <Route path="expenses" element={<div>Pagina Spese (da implementare)</div>} />
-              <Route path="incomes" element={<div>Pagina Entrate (da implementare)</div>} />
+              <Route path="expenses" element={<ExpensesPage />} />
+              <Route path="incomes" element={<IncomesPage />} />
               <Route path="budgets" element={<div>Pagina Budget (da implementare)</div>} />
               <Route path="categories" element={<div>Pagina Categorie (da implementare)</div>} />
               <Route path="family" element={<div>Pagina Famiglia (da implementare)</div>} />

@@ -23,16 +23,46 @@ import { categoryColors } from '../../styles/theme';
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const ExpensesPieChart = ({ data, loading = false, title = "Spese per Categoria" }) => {
-  // Dati di esempio se non ci sono dati reali
-  const defaultData = [
-    { category: 'Alimentari', amount: 450, color: categoryColors.alimentari },
-    { category: 'Trasporti', amount: 280, color: categoryColors.trasporti },
-    { category: 'Casa', amount: 320, color: categoryColors.casa },
-    { category: 'Intrattenimento', amount: 150, color: categoryColors.intrattenimento },
-    { category: 'Altro', amount: 100, color: categoryColors.altro },
-  ];
+  // Processa i dati dall'API
+  const processChartData = (apiData) => {
+    if (!apiData || !Array.isArray(apiData)) return [];
+    
+    return apiData.map(item => ({
+      category: item.categoryName || item.category || 'Sconosciuto',
+      amount: item.totalAmount || item.amount || 0,
+      color: categoryColors[item.categoryName?.toLowerCase().replace(/\s+/g, '')] || categoryColors.altro,
+    }));
+  };
 
-  const chartData = data || defaultData;
+  const chartData = processChartData(data);
+  
+  // Se non ci sono dati, mostra messaggio
+  if (!loading && (!chartData || chartData.length === 0)) {
+    return (
+      <Card sx={{ height: '100%' }}>
+        <CardHeader title={title} />
+        <CardContent>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: 300,
+              gap: 2,
+            }}
+          >
+            <Typography variant="h6" color="text.secondary">
+              Nessuna spesa registrata
+            </Typography>
+            <Typography variant="body2" color="text.secondary" textAlign="center">
+              Inizia ad aggiungere le tue spese per vedere i grafici
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const pieData = {
     labels: chartData.map(item => item.category),

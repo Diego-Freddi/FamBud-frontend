@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Typography,
   Box,
@@ -6,6 +6,8 @@ import {
   Fab,
   useTheme,
   useMediaQuery,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import {
   AddOutlined,
@@ -13,8 +15,11 @@ import {
   TrendingUpOutlined,
   ReceiptOutlined,
   SavingsOutlined,
+  RefreshOutlined,
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useDashboardData } from '../hooks/useApi';
 import StatsCard from '../components/Dashboard/StatsCard';
 import ExpensesPieChart from '../components/Dashboard/ExpensesPieChart';
 import MonthlyTrendChart from '../components/Dashboard/MonthlyTrendChart';
@@ -23,43 +28,86 @@ import BudgetAlerts from '../components/Dashboard/BudgetAlerts';
 
 const DashboardPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [loading, setLoading] = useState(false);
-
-  // Dati di esempio per la dashboard
-  const [dashboardData, setDashboardData] = useState({
-    balance: 1250.75,
-    monthlyIncome: 2500.00,
-    monthlyExpenses: 1249.25,
-    savings: 1250.75,
-    expensesByCategory: null, // Userà i dati di default del componente
-    monthlyTrend: null, // Userà i dati di default del componente
-    recentTransactions: null, // Userà i dati di default del componente
-    budgetAlerts: null, // Userà i dati di default del componente
-  });
-
-  // Simula il caricamento dei dati
-  useEffect(() => {
-    // In futuro qui faremo le chiamate API reali
-    setLoading(false);
-  }, []);
+  
+  // Hook per dati reali dalla API
+  const { dashboardData, loading, error, refetch } = useDashboardData();
 
   const currentMonth = new Intl.DateTimeFormat('it-IT', { 
     month: 'long', 
     year: 'numeric' 
   }).format(new Date());
 
+  // Gestione errori
+  if (error) {
+    return (
+      <Box>
+        <Alert 
+          severity="error" 
+          action={
+            <Fab
+              size="small"
+              color="inherit"
+              onClick={refetch}
+              sx={{ ml: 2 }}
+            >
+              <RefreshOutlined />
+            </Fab>
+          }
+          sx={{ mb: 2 }}
+        >
+          Errore nel caricamento dei dati: {error}
+        </Alert>
+      </Box>
+    );
+  }
+
+  // Loading completo per il primo caricamento
+  if (loading && !dashboardData.stats) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '50vh',
+          gap: 2,
+        }}
+      >
+        <CircularProgress size={60} />
+        <Typography variant="h6" color="text.secondary">
+          Caricamento dashboard...
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box>
       {/* Header della dashboard */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-          Dashboard
-        </Typography>
-        <Typography variant="subtitle1" color="text.secondary">
-          Benvenuto, {user?.name}! Ecco un riepilogo delle tue finanze per {currentMonth}.
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box>
+            <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+              Dashboard
+            </Typography>
+            <Typography variant="subtitle1" color="text.secondary">
+              Benvenuto, {user?.name}! Ecco un riepilogo delle tue finanze per {currentMonth}.
+            </Typography>
+          </Box>
+          <Fab
+            size="small"
+            color="primary"
+            onClick={refetch}
+            disabled={loading}
+            sx={{ opacity: loading ? 0.5 : 1 }}
+          >
+            <RefreshOutlined />
+          </Fab>
+        </Box>
       </Box>
 
       {/* Cards delle statistiche principali */}
@@ -67,12 +115,10 @@ const DashboardPage = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatsCard
             title="Saldo Corrente"
-            value={dashboardData.balance}
+            value={dashboardData.stats?.balance || 0}
             subtitle="Disponibile"
             icon={<AccountBalanceWalletOutlined />}
             color="primary"
-            trend="up"
-            trendValue={5.2}
             loading={loading}
           />
         </Grid>
@@ -80,7 +126,7 @@ const DashboardPage = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatsCard
             title="Entrate Mensili"
-            value={dashboardData.monthlyIncome}
+            value={dashboardData.stats?.monthlyIncome || 0}
             subtitle={currentMonth}
             icon={<TrendingUpOutlined />}
             color="success"
@@ -91,12 +137,10 @@ const DashboardPage = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatsCard
             title="Spese Mensili"
-            value={dashboardData.monthlyExpenses}
+            value={dashboardData.stats?.monthlyExpenses || 0}
             subtitle={currentMonth}
             icon={<ReceiptOutlined />}
             color="error"
-            trend="down"
-            trendValue={3.1}
             loading={loading}
           />
         </Grid>
@@ -104,12 +148,10 @@ const DashboardPage = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatsCard
             title="Risparmi"
-            value={dashboardData.savings}
+            value={dashboardData.stats?.savings || 0}
             subtitle="Totale accumulato"
             icon={<SavingsOutlined />}
             color="info"
-            trend="up"
-            trendValue={12.5}
             loading={loading}
           />
         </Grid>
@@ -163,10 +205,7 @@ const DashboardPage = () => {
           right: isMobile ? 16 : 32,
           zIndex: 1000,
         }}
-        onClick={() => {
-          // In futuro aprirà il modal per aggiungere spesa
-          console.log('Aggiungi spesa');
-        }}
+        onClick={() => navigate('/expenses')}
       >
         <AddOutlined />
       </Fab>

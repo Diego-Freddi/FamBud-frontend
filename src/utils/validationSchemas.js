@@ -4,12 +4,11 @@ import * as yup from 'yup';
 export const loginSchema = yup.object({
   email: yup
     .string()
-    .email('Inserisci un\'email valida')
-    .required('L\'email è obbligatoria'),
+    .required('L\'email è obbligatoria')
+    .email('Inserisci un\'email valida'),
   password: yup
     .string()
-    .required('La password è obbligatoria')
-    .min(6, 'La password deve avere almeno 6 caratteri'),
+    .required('La password è obbligatoria'),
 });
 
 // Schema per registrazione
@@ -17,21 +16,20 @@ export const registerSchema = yup.object({
   name: yup
     .string()
     .required('Il nome è obbligatorio')
-    .min(2, 'Il nome deve avere almeno 2 caratteri')
-    .max(50, 'Il nome non può superare i 50 caratteri')
-    .matches(/^[a-zA-ZÀ-ÿ\s]+$/, 'Il nome può contenere solo lettere e spazi'),
+    .min(2, 'Il nome deve essere di almeno 2 caratteri')
+    .max(50, 'Il nome non può superare i 50 caratteri'),
   email: yup
     .string()
-    .email('Inserisci un\'email valida')
-    .required('L\'email è obbligatoria'),
+    .required('L\'email è obbligatoria')
+    .email('Inserisci un\'email valida'),
   password: yup
     .string()
     .required('La password è obbligatoria')
-    .min(8, 'La password deve avere almeno 8 caratteri')
-    .matches(/[A-Z]/, 'La password deve contenere almeno una maiuscola')
-    .matches(/[a-z]/, 'La password deve contenere almeno una minuscola')
-    .matches(/[0-9]/, 'La password deve contenere almeno un numero')
-    .matches(/[^A-Za-z0-9]/, 'La password deve contenere almeno un carattere speciale'),
+    .min(6, 'La password deve essere di almeno 6 caratteri')
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      'La password deve contenere almeno una lettera minuscola, una maiuscola e un numero'
+    ),
   confirmPassword: yup
     .string()
     .required('Conferma la password')
@@ -53,8 +51,8 @@ export const registerSchema = yup.object({
 export const forgotPasswordSchema = yup.object({
   email: yup
     .string()
-    .email('Inserisci un\'email valida')
-    .required('L\'email è obbligatoria'),
+    .required('L\'email è obbligatoria')
+    .email('Inserisci un\'email valida'),
 });
 
 // Schema per nuova password
@@ -62,11 +60,11 @@ export const resetPasswordSchema = yup.object({
   password: yup
     .string()
     .required('La password è obbligatoria')
-    .min(8, 'La password deve avere almeno 8 caratteri')
-    .matches(/[A-Z]/, 'La password deve contenere almeno una maiuscola')
-    .matches(/[a-z]/, 'La password deve contenere almeno una minuscola')
-    .matches(/[0-9]/, 'La password deve contenere almeno un numero')
-    .matches(/[^A-Za-z0-9]/, 'La password deve contenere almeno un carattere speciale'),
+    .min(6, 'La password deve essere di almeno 6 caratteri')
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      'La password deve contenere almeno una lettera minuscola, una maiuscola e un numero'
+    ),
   confirmPassword: yup
     .string()
     .required('Conferma la password')
@@ -75,14 +73,11 @@ export const resetPasswordSchema = yup.object({
 
 // Schema per creazione famiglia
 export const createFamilySchema = yup.object({
-  name: yup
+  familyName: yup
     .string()
     .required('Il nome della famiglia è obbligatorio')
-    .min(2, 'Il nome famiglia deve avere almeno 2 caratteri')
-    .max(50, 'Il nome famiglia non può superare i 50 caratteri'),
-  description: yup
-    .string()
-    .max(200, 'La descrizione non può superare i 200 caratteri'),
+    .min(2, 'Il nome deve essere di almeno 2 caratteri')
+    .max(50, 'Il nome non può superare i 50 caratteri'),
 });
 
 // Schema per aggiornamento famiglia
@@ -118,11 +113,15 @@ export const expenseSchema = yup.object({
     .number()
     .required('L\'importo è obbligatorio')
     .positive('L\'importo deve essere positivo')
-    .max(999999.99, 'L\'importo non può superare €999,999.99'),
+    .max(999999.99, 'L\'importo non può superare €999,999.99')
+    .test('decimal', 'L\'importo può avere al massimo 2 decimali', (value) => {
+      if (value === undefined) return true;
+      return Number(value.toFixed(2)) === value;
+    }),
   description: yup
     .string()
     .required('La descrizione è obbligatoria')
-    .min(3, 'La descrizione deve avere almeno 3 caratteri')
+    .min(3, 'La descrizione deve essere di almeno 3 caratteri')
     .max(200, 'La descrizione non può superare i 200 caratteri'),
   categoryId: yup
     .string()
@@ -130,7 +129,14 @@ export const expenseSchema = yup.object({
   date: yup
     .date()
     .required('La data è obbligatoria')
-    .max(new Date(), 'La data non può essere futura'),
+    .test('not-future', 'La data non può essere futura', function(value) {
+      if (!value) return true;
+      const today = new Date();
+      const inputDate = new Date(value);
+      // Confronta solo le date, ignorando l'orario
+      today.setHours(23, 59, 59, 999);
+      return inputDate <= today;
+    }),
   notes: yup
     .string()
     .max(500, 'Le note non possono superare i 500 caratteri'),
@@ -146,33 +152,47 @@ export const incomeSchema = yup.object({
     .number()
     .required('L\'importo è obbligatorio')
     .positive('L\'importo deve essere positivo')
-    .max(999999.99, 'L\'importo non può superare €999,999.99'),
+    .max(999999.99, 'L\'importo non può superare €999,999.99')
+    .test('decimal', 'L\'importo può avere al massimo 2 decimali', (value) => {
+      if (value === undefined) return true;
+      return Number(value.toFixed(2)) === value;
+    }),
   description: yup
     .string()
     .required('La descrizione è obbligatoria')
-    .min(3, 'La descrizione deve avere almeno 3 caratteri')
+    .min(3, 'La descrizione deve essere di almeno 3 caratteri')
     .max(200, 'La descrizione non può superare i 200 caratteri'),
   source: yup
     .string()
     .required('La fonte è obbligatoria')
-    .oneOf([
-      'salary', 'freelance', 'bonus', 'investment', 
-      'rental', 'gift', 'refund', 'other'
-    ], 'Fonte non valida'),
+    .min(2, 'La fonte deve essere di almeno 2 caratteri')
+    .max(100, 'La fonte non può superare i 100 caratteri'),
   date: yup
     .date()
-    .required('La data è obbligatoria')
-    .max(new Date(), 'La data non può essere futura'),
-  isRecurring: yup.boolean(),
+    .required('La data è obbligatoria'),
+  isRecurring: yup
+    .boolean(),
   recurringType: yup
     .string()
     .when('isRecurring', {
       is: true,
       then: (schema) => schema
         .required('Il tipo di ricorrenza è obbligatorio')
-        .oneOf(['monthly', 'weekly', 'yearly'], 'Tipo di ricorrenza non valido'),
+        .oneOf(['weekly', 'biweekly', 'monthly', 'quarterly', 'yearly'], 'Tipo di ricorrenza non valido'),
       otherwise: (schema) => schema.notRequired(),
     }),
+  recurringEndDate: yup
+    .date()
+    .when('isRecurring', {
+      is: true,
+      then: (schema) => schema
+        .required('La data di fine ricorrenza è obbligatoria')
+        .min(yup.ref('date'), 'La data di fine deve essere successiva alla data di inizio'),
+      otherwise: (schema) => schema.notRequired(),
+    }),
+  notes: yup
+    .string()
+    .max(500, 'Le note non possono superare i 500 caratteri'),
 });
 
 // Schema per categoria
@@ -180,16 +200,15 @@ export const categorySchema = yup.object({
   name: yup
     .string()
     .required('Il nome della categoria è obbligatorio')
-    .min(2, 'Il nome deve avere almeno 2 caratteri')
+    .min(2, 'Il nome deve essere di almeno 2 caratteri')
     .max(50, 'Il nome non può superare i 50 caratteri'),
   color: yup
     .string()
     .required('Il colore è obbligatorio')
-    .matches(/^#[0-9A-F]{6}$/i, 'Il colore deve essere in formato esadecimale (es. #FF0000)'),
+    .matches(/^#[0-9A-F]{6}$/i, 'Il colore deve essere in formato esadecimale'),
   icon: yup
     .string()
-    .required('L\'icona è obbligatoria')
-    .max(50, 'Il nome dell\'icona non può superare i 50 caratteri'),
+    .max(50, 'L\'icona non può superare i 50 caratteri'),
 });
 
 // Schema per budget
@@ -211,7 +230,7 @@ export const budgetSchema = yup.object({
     .number()
     .required('L\'anno è obbligatorio')
     .min(2020, 'L\'anno deve essere almeno 2020')
-    .max(2030, 'L\'anno non può essere oltre il 2030'),
+    .max(2030, 'L\'anno non può superare il 2030'),
   alertThreshold: yup
     .number()
     .min(0, 'La soglia deve essere almeno 0%')

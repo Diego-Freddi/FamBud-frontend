@@ -22,56 +22,41 @@ import {
 import { categoryColors } from '../../styles/theme';
 
 const RecentTransactions = ({ data, loading = false, title = "Ultime Transazioni" }) => {
-  // Dati di esempio se non ci sono dati reali
-  const defaultData = [
-    {
-      id: 1,
-      type: 'expense',
-      description: 'Spesa al supermercato',
-      category: 'Alimentari',
-      amount: 45.50,
-      date: new Date('2024-01-15'),
-      user: 'Mario Rossi',
-    },
-    {
-      id: 2,
-      type: 'income',
-      description: 'Stipendio gennaio',
-      category: 'Stipendio',
-      amount: 2500.00,
-      date: new Date('2024-01-01'),
-      user: 'Mario Rossi',
-    },
-    {
-      id: 3,
-      type: 'expense',
-      description: 'Benzina auto',
-      category: 'Trasporti',
-      amount: 65.00,
-      date: new Date('2024-01-14'),
-      user: 'Anna Rossi',
-    },
-    {
-      id: 4,
-      type: 'expense',
-      description: 'Bolletta elettricità',
-      category: 'Casa',
-      amount: 120.30,
-      date: new Date('2024-01-13'),
-      user: 'Mario Rossi',
-    },
-    {
-      id: 5,
-      type: 'expense',
-      description: 'Cinema',
-      category: 'Intrattenimento',
-      amount: 24.00,
-      date: new Date('2024-01-12'),
-      user: 'Anna Rossi',
-    },
-  ];
+  // Processa i dati dall'API
+  const processTransactions = (apiData) => {
+    if (!apiData || !Array.isArray(apiData)) return [];
+    
+    return apiData.map(item => ({
+      id: item._id || item.id,
+      type: item.type,
+      description: item.description,
+      category: item.categoryId?.name || item.category?.name || item.source || 'Sconosciuto',
+      amount: item.amount,
+      date: new Date(item.date),
+      user: item.userId?.name || 'Utente',
+    }));
+  };
 
-  const transactions = data || defaultData;
+  const transactions = processTransactions(data);
+  
+  // Se non ci sono dati, mostra messaggio
+  if (!loading && (!transactions || transactions.length === 0)) {
+    return (
+      <Card sx={{ height: '100%' }}>
+        <CardHeader title={title} />
+        <CardContent>
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              Nessuna transazione recente
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Le tue ultime spese e entrate appariranno qui
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const formatDate = (date) => {
     return new Intl.DateTimeFormat('it-IT', {

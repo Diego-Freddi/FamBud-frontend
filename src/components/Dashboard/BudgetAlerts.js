@@ -22,43 +22,51 @@ import {
 } from '@mui/icons-material';
 
 const BudgetAlerts = ({ data, loading = false, title = "Stato Budget" }) => {
-  // Dati di esempio se non ci sono dati reali
-  const defaultData = [
-    {
-      id: 1,
-      category: 'Alimentari',
-      budgetAmount: 500,
-      spentAmount: 450,
-      percentage: 90,
-      status: 'warning', // safe, warning, exceeded
-    },
-    {
-      id: 2,
-      category: 'Trasporti',
-      budgetAmount: 300,
-      spentAmount: 280,
-      percentage: 93,
-      status: 'warning',
-    },
-    {
-      id: 3,
-      category: 'Casa',
-      budgetAmount: 400,
-      spentAmount: 320,
-      percentage: 80,
-      status: 'safe',
-    },
-    {
-      id: 4,
-      category: 'Intrattenimento',
-      budgetAmount: 200,
-      spentAmount: 220,
-      percentage: 110,
-      status: 'exceeded',
-    },
-  ];
+  // Processa i dati dall'API
+  const processBudgets = (apiData) => {
+    if (!apiData || !Array.isArray(apiData)) return [];
+    
+    return apiData.map(item => {
+      const percentage = item.percentageUsed || 0;
+      let status = 'safe';
+      
+      if (percentage >= 100) {
+        status = 'exceeded';
+      } else if (percentage >= (item.alertThreshold || 80)) {
+        status = 'warning';
+      }
+      
+      return {
+        id: item._id || item.id,
+        category: item.categoryId?.name || 'Sconosciuto',
+        budgetAmount: item.amount || 0,
+        spentAmount: item.spent || 0,
+        percentage: Math.round(percentage),
+        status,
+      };
+    });
+  };
 
-  const budgets = data || defaultData;
+  const budgets = processBudgets(data);
+  
+  // Se non ci sono dati, mostra messaggio
+  if (!loading && (!budgets || budgets.length === 0)) {
+    return (
+      <Card sx={{ height: '100%' }}>
+        <CardHeader title={title} />
+        <CardContent>
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              Nessun budget configurato
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Imposta i tuoi budget mensili per tenere traccia delle spese
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const getStatusIcon = (status) => {
     switch (status) {
