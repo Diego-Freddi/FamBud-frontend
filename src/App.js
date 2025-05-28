@@ -18,6 +18,7 @@ import ExpensesPage from './pages/ExpensesPage';
 import IncomesPage from './pages/IncomesPage';
 import CategoriesPage from './pages/CategoriesPage';
 import BudgetsPage from './pages/BudgetsPage';
+import FamilyPage from './pages/FamilyPage';
 
 function App() {
   return (
@@ -57,7 +58,7 @@ function App() {
               <Route path="incomes" element={<IncomesPage />} />
               <Route path="budgets" element={<BudgetsPage />} />
               <Route path="categories" element={<CategoriesPage />} />
-              <Route path="family" element={<div>Pagina Famiglia (da implementare)</div>} />
+              <Route path="family" element={<FamilyPage />} />
               <Route path="settings" element={<div>Pagina Impostazioni (da implementare)</div>} />
               <Route path="profile" element={<div>Pagina Profilo (da implementare)</div>} />
               
