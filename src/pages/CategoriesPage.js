@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -33,8 +33,9 @@ import {
   BarChartOutlined,
   DragIndicatorOutlined,
 } from '@mui/icons-material';
+import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
 import { categoryAPI } from '../services/api';
-import { useApi } from '../hooks/useApi';
 import CategoryForm from '../components/Categories/CategoryForm';
 import { categoryColors } from '../styles/theme';
 
@@ -67,19 +68,54 @@ const CategoriesPage = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
 
-  // Carica categorie
-  const { 
-    data: categoriesData, 
-    loading: categoriesLoading, 
-    error: categoriesError,
-    refetch: refetchCategories 
-  } = useApi(categoryAPI.getCategories, [], true);
+  // Stati per categorie - gestione manuale
+  const [categoriesData, setCategoriesData] = useState(null);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [categoriesError, setCategoriesError] = useState(null);
 
-  // Carica statistiche categorie
-  const { 
-    data: statsData, 
-    loading: statsLoading 
-  } = useApi(categoryAPI.getCategoryStats, [], true);
+  // Stati per statistiche - gestione manuale
+  const [statsData, setStatsData] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  // Carica categorie
+  const loadCategories = useCallback(async () => {
+    try {
+      setCategoriesLoading(true);
+      setCategoriesError(null);
+      const response = await categoryAPI.getCategories();
+      setCategoriesData(response.data);
+    } catch (error) {
+      console.error('❌ Errore caricamento categorie:', error);
+      setCategoriesError(error.response?.data?.message || 'Errore nel caricamento delle categorie');
+    } finally {
+      setCategoriesLoading(false);
+    }
+  }, []);
+
+  // Carica statistiche
+  const loadStats = useCallback(async () => {
+    try {
+      setStatsLoading(true);
+      const response = await categoryAPI.getCategoryStats();
+      setStatsData(response.data);
+    } catch (error) {
+      console.error('❌ Errore caricamento statistiche:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, []);
+
+  // Carica dati iniziali
+  useEffect(() => {
+    loadCategories();
+    loadStats();
+  }, [loadCategories, loadStats]);
+
+  // Funzione refetch per uso esterno
+  const refetchCategories = useCallback(() => {
+    loadCategories();
+    loadStats();
+  }, [loadCategories, loadStats]);
 
   const categories = categoriesData?.data?.categories || [];
   const stats = statsData?.data?.stats || {};

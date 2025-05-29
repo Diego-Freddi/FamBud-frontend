@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -42,6 +42,8 @@ import {
   RefreshOutlined,
   FileDownloadOutlined,
   SortOutlined,
+  ArrowUpwardOutlined,
+  ArrowDownwardOutlined,
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -49,13 +51,18 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { it } from 'date-fns/locale';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { expenseAPI, categoryAPI } from '../services/api';
-import { useApi } from '../hooks/useApi';
 import ExpenseForm from '../components/Expenses/ExpenseForm';
 import { categoryColors } from '../styles/theme';
 
 const ExpensesPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
+  // Date iniziali stabili
+  const initialDates = useMemo(() => ({
+    startDate: startOfMonth(new Date()),
+    endDate: endOfMonth(new Date())
+  }), []);
   
   // Stati per form e modali
   const [formOpen, setFormOpen] = useState(false);
@@ -66,9 +73,9 @@ const ExpensesPage = () => {
   // Stati per filtri e ricerca
   const [filters, setFilters] = useState({
     search: '',
-    categoryId: '',
-    dateFrom: startOfMonth(new Date()),
-    dateTo: endOfMonth(new Date()),
+    category: 'all',
+    startDate: initialDates.startDate,
+    endDate: initialDates.endDate,
     minAmount: '',
     maxAmount: '',
   });
@@ -83,41 +90,143 @@ const ExpensesPage = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedExpense, setSelectedExpense] = useState(null);
 
-  // Carica categorie
-  const { 
-    data: categoriesData, 
-    loading: categoriesLoading 
-  } = useApi(categoryAPI.getCategories, [], true);
+  // Stati per categorie - gestione manuale
+  const [categoriesData, setCategoriesData] = useState(null);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
-  // Funzione stabilizzata per caricare spese
-  const fetchExpenses = useCallback(() => {
-    return expenseAPI.getExpenses({
+  // Stati per spese - gestione manuale
+  const [expensesData, setExpensesData] = useState(null);
+  const [expensesLoading, setExpensesLoading] = useState(true);
+  const [expensesError, setExpensesError] = useState(null);
+
+  // Carica categorie una sola volta
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const response = await categoryAPI.getCategories();
+        setCategoriesData(response.data);
+      } catch (error) {
+        console.error('❌ Errore caricamento categorie:', error);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    loadCategories();
+  }, []); // Dipendenze vuote - carica solo una volta
+
+  // Stabilizza i parametri per evitare loop infiniti
+  const apiParams = useMemo(() => {
+    // Ordinamenti supportati dal server
+    const serverSortFields = ['date', 'description', 'amount'];
+    const useServerSort = serverSortFields.includes(sortBy);
+    
+    // Se la ricerca è < 3 caratteri, non inviare il parametro search al backend
+    // Così il backend restituisce tutti i risultati e il frontend fa la ricerca estesa
+    const useBackendSearch = filters.search && filters.search.length >= 3;
+    
+    return {
       page,
       limit: 10,
-      search: filters.search || undefined,
-      categoryId: filters.categoryId || undefined,
-      dateFrom: filters.dateFrom ? filters.dateFrom.toISOString() : undefined,
-      dateTo: filters.dateTo ? filters.dateTo.toISOString() : undefined,
+      // Non inviare search al backend se facciamo ricerca frontend
+      search: useBackendSearch ? undefined : undefined,
+      category: filters.category === 'all' ? undefined : filters.category,
+      startDate: filters.startDate ? filters.startDate.toISOString() : undefined,
+      endDate: filters.endDate ? filters.endDate.toISOString() : undefined,
       minAmount: filters.minAmount || undefined,
       maxAmount: filters.maxAmount || undefined,
-      sortBy,
-      sortOrder,
-    });
-  }, [page, filters, sortBy, sortOrder]);
+      // Solo per ordinamenti supportati dal server
+      sortBy: useServerSort ? sortBy : 'date',
+      sortOrder: useServerSort ? sortOrder : 'desc',
+    };
+  }, [page, filters.category, filters.startDate, filters.endDate, filters.minAmount, filters.maxAmount, sortBy, sortOrder]);
 
-  // Carica spese con filtri
-  const { 
-    data: expensesData, 
-    loading: expensesLoading, 
-    error: expensesError,
-    refetch: refetchExpenses 
-  } = useApi(fetchExpenses, [page, filters, sortBy, sortOrder], true);
+  // Funzione per caricare spese
+  const loadExpenses = useCallback(async () => {
+    try {
+      setExpensesLoading(true);
+      setExpensesError(null);
+      const response = await expenseAPI.getExpenses(apiParams);
+      setExpensesData(response.data);
+    } catch (error) {
+      console.error('❌ Errore caricamento spese:', error);
+      setExpensesError(error.response?.data?.message || 'Errore nel caricamento delle spese');
+    } finally {
+      setExpensesLoading(false);
+    }
+  }, [apiParams]);
+
+  // Carica spese quando cambiano i parametri
+  useEffect(() => {
+    loadExpenses();
+  }, [loadExpenses]);
+
+  // Funzione refetch per uso esterno
+  const refetchExpenses = useCallback(() => {
+    return loadExpenses();
+  }, [loadExpenses]);
 
   const expenses = expensesData?.data?.expenses || [];
   const pagination = expensesData?.data?.pagination || {};
   const totalPages = pagination.pages || 1;
   const totalExpenses = pagination.total || 0;
   const categories = categoriesData?.data?.categories || [];
+
+  // Funzione per ordinamento locale (per campi popolati come categoria e utente)
+  const sortExpensesLocally = useMemo(() => {
+    if (!expenses.length) return expenses;
+    
+    // Solo per ordinamenti locali (categoria e utente)
+    if (sortBy === 'category' || sortBy === 'user') {
+      const sorted = [...expenses].sort((a, b) => {
+        let valueA, valueB;
+        
+        if (sortBy === 'category') {
+          valueA = a.category?.name || '';
+          valueB = b.category?.name || '';
+        } else if (sortBy === 'user') {
+          valueA = a.userId?.name || '';
+          valueB = b.userId?.name || '';
+        }
+        
+        const comparison = valueA.localeCompare(valueB, 'it', { sensitivity: 'base' });
+        return sortOrder === 'desc' ? -comparison : comparison;
+      });
+      
+      return sorted;
+    }
+    
+    // Per altri ordinamenti, usa i dati dal server
+    return expenses;
+  }, [expenses, sortBy, sortOrder]);
+
+  // Funzione per filtrare localmente per ricerca estesa (categoria e utente)
+  const filteredExpenses = useMemo(() => {
+    if (!filters.search || filters.search.length < 3) {
+      return sortExpensesLocally;
+    }
+
+    const searchTerm = filters.search.toLowerCase();
+    
+    return sortExpensesLocally.filter(expense => {
+      // Ricerca in categoria
+      const categoryName = expense.category?.name?.toLowerCase() || '';
+      const categoryMatch = categoryName.includes(searchTerm);
+      
+      // Ricerca in utente
+      const userName = expense.userId?.name?.toLowerCase() || '';
+      const userMatch = userName.includes(searchTerm);
+      
+      // Ricerca in descrizione (già gestita dal backend, ma aggiungiamo per completezza locale)
+      const descriptionMatch = expense.description?.toLowerCase().includes(searchTerm) || false;
+      
+      // Ricerca in note
+      const notesMatch = expense.notes?.toLowerCase().includes(searchTerm) || false;
+      
+      return categoryMatch || userMatch || descriptionMatch || notesMatch;
+    });
+  }, [sortExpensesLocally, filters.search]);
 
   // Gestione filtri
   const handleFilterChange = (field, value) => {
@@ -128,9 +237,9 @@ const ExpensesPage = () => {
   const clearFilters = () => {
     setFilters({
       search: '',
-      categoryId: '',
-      dateFrom: startOfMonth(new Date()),
-      dateTo: endOfMonth(new Date()),
+      category: 'all',
+      startDate: initialDates.startDate,
+      endDate: initialDates.endDate,
       minAmount: '',
       maxAmount: '',
     });
@@ -263,10 +372,10 @@ const ExpensesPage = () => {
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={4}>
                     <TextField
-                      fullWidth
-                      label="Cerca"
+                      size="small"
+                      placeholder="Cerca in descrizione, note, categoria, utente... (min 3 caratteri)"
                       value={filters.search}
-                      onChange={(e) => handleFilterChange('search', e.target.value)}
+                      onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -274,6 +383,7 @@ const ExpensesPage = () => {
                           </InputAdornment>
                         ),
                       }}
+                      sx={{ minWidth: 300 }}
                     />
                   </Grid>
                   
@@ -281,11 +391,13 @@ const ExpensesPage = () => {
                     <FormControl fullWidth>
                       <InputLabel>Categoria</InputLabel>
                       <Select
-                        value={filters.categoryId}
+                        value={filters.category}
                         label="Categoria"
-                        onChange={(e) => handleFilterChange('categoryId', e.target.value)}
+                        onChange={(e) => handleFilterChange('category', e.target.value)}
                       >
-                        <MenuItem value="">Tutte le categorie</MenuItem>
+                        <MenuItem value="all">
+                          Tutte le categorie
+                        </MenuItem>
                         {categories.map((category) => (
                           <MenuItem key={category._id} value={category._id}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -308,8 +420,8 @@ const ExpensesPage = () => {
                   <Grid item xs={6} md={2}>
                     <DatePicker
                       label="Da"
-                      value={filters.dateFrom}
-                      onChange={(date) => handleFilterChange('dateFrom', date)}
+                      value={filters.startDate}
+                      onChange={(date) => handleFilterChange('startDate', date)}
                       slotProps={{
                         textField: { fullWidth: true, size: 'small' }
                       }}
@@ -319,8 +431,8 @@ const ExpensesPage = () => {
                   <Grid item xs={6} md={2}>
                     <DatePicker
                       label="A"
-                      value={filters.dateTo}
-                      onChange={(date) => handleFilterChange('dateTo', date)}
+                      value={filters.endDate}
+                      onChange={(date) => handleFilterChange('endDate', date)}
                       slotProps={{
                         textField: { fullWidth: true, size: 'small' }
                       }}
@@ -421,7 +533,15 @@ const ExpensesPage = () => {
                     <Button
                       size="small"
                       onClick={() => handleSort('date')}
-                      startIcon={<SortOutlined />}
+                      startIcon={
+                        sortBy === 'date' ? (
+                          sortOrder === 'desc' ? <ArrowDownwardOutlined /> : <ArrowUpwardOutlined />
+                        ) : (
+                          <SortOutlined />
+                        )
+                      }
+                      variant={sortBy === 'date' ? 'contained' : 'text'}
+                      color={sortBy === 'date' ? 'primary' : 'inherit'}
                     >
                       Data
                     </Button>
@@ -430,6 +550,15 @@ const ExpensesPage = () => {
                     <Button
                       size="small"
                       onClick={() => handleSort('description')}
+                      startIcon={
+                        sortBy === 'description' ? (
+                          sortOrder === 'desc' ? <ArrowDownwardOutlined /> : <ArrowUpwardOutlined />
+                        ) : (
+                          <SortOutlined />
+                        )
+                      }
+                      variant={sortBy === 'description' ? 'contained' : 'text'}
+                      color={sortBy === 'description' ? 'primary' : 'inherit'}
                     >
                       Descrizione
                     </Button>
@@ -438,6 +567,15 @@ const ExpensesPage = () => {
                     <Button
                       size="small"
                       onClick={() => handleSort('amount')}
+                      startIcon={
+                        sortBy === 'amount' ? (
+                          sortOrder === 'desc' ? <ArrowDownwardOutlined /> : <ArrowUpwardOutlined />
+                        ) : (
+                          <SortOutlined />
+                        )
+                      }
+                      variant={sortBy === 'amount' ? 'contained' : 'text'}
+                      color={sortBy === 'amount' ? 'primary' : 'inherit'}
                     >
                       Importo
                     </Button>
@@ -445,14 +583,38 @@ const ExpensesPage = () => {
                   {!isMobile && (
                     <>
                       <Grid item md={2}>
-                        <Typography variant="body2" color="text.secondary">
+                        <Button
+                          size="small"
+                          onClick={() => handleSort('category')}
+                          startIcon={
+                            sortBy === 'category' ? (
+                              sortOrder === 'desc' ? <ArrowDownwardOutlined /> : <ArrowUpwardOutlined />
+                            ) : (
+                              <SortOutlined />
+                            )
+                          }
+                          variant={sortBy === 'category' ? 'contained' : 'text'}
+                          color={sortBy === 'category' ? 'primary' : 'inherit'}
+                        >
                           Categoria
-                        </Typography>
+                        </Button>
                       </Grid>
                       <Grid item md={1}>
-                        <Typography variant="body2" color="text.secondary">
+                        <Button
+                          size="small"
+                          onClick={() => handleSort('user')}
+                          startIcon={
+                            sortBy === 'user' ? (
+                              sortOrder === 'desc' ? <ArrowDownwardOutlined /> : <ArrowUpwardOutlined />
+                            ) : (
+                              <SortOutlined />
+                            )
+                          }
+                          variant={sortBy === 'user' ? 'contained' : 'text'}
+                          color={sortBy === 'user' ? 'primary' : 'inherit'}
+                        >
                           Utente
-                        </Typography>
+                        </Button>
                       </Grid>
                     </>
                   )}
@@ -462,7 +624,7 @@ const ExpensesPage = () => {
             </Card>
 
             {/* Lista spese */}
-            {expenses.map((expense) => {
+            {filteredExpenses.map((expense) => {
               const categoryInfo = getCategoryInfo(expense);
               
               return (
@@ -543,7 +705,7 @@ const ExpensesPage = () => {
             })}
 
             {/* Paginazione */}
-            {totalPages > 1 && (
+            {totalPages > 1 && (!filters.search || filters.search.length < 3) && (
               <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
                 <Pagination
                   count={totalPages}
@@ -551,6 +713,15 @@ const ExpensesPage = () => {
                   onChange={(e, newPage) => setPage(newPage)}
                   color="primary"
                 />
+              </Box>
+            )}
+
+            {/* Messaggio quando si usa ricerca frontend */}
+            {filters.search && filters.search.length >= 3 && (
+              <Box sx={{ textAlign: 'center', mt: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Mostrando {filteredExpenses.length} risultati per "{filters.search}"
+                </Typography>
               </Box>
             )}
           </>

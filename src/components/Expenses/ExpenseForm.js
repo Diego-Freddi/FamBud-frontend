@@ -36,7 +36,6 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { it } from 'date-fns/locale';
 import { expenseSchema } from '../../utils/validationSchemas';
 import { expenseAPI, categoryAPI } from '../../services/api';
-import { useApi } from '../../hooks/useApi';
 
 const ExpenseForm = ({ 
   open, 
@@ -50,11 +49,26 @@ const ExpenseForm = ({
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
 
-  // Carica categorie
-  const { 
-    data: categoriesData, 
-    loading: categoriesLoading 
-  } = useApi(categoryAPI.getCategories, [], true);
+  // Stati per categorie - gestione manuale
+  const [categoriesData, setCategoriesData] = useState(null);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+  // Carica categorie una sola volta
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const response = await categoryAPI.getCategories();
+        setCategoriesData(response.data);
+      } catch (error) {
+        console.error('❌ Errore caricamento categorie:', error);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    loadCategories();
+  }, []); // Dipendenze vuote - carica solo una volta
 
   const categories = categoriesData?.data?.categories || [];
 

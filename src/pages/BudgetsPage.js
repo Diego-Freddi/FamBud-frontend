@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -42,7 +42,6 @@ import {
   CalendarTodayOutlined,
 } from '@mui/icons-material';
 import { budgetAPI, categoryAPI } from '../services/api';
-import { useApi } from '../hooks/useApi';
 import BudgetForm from '../components/Budgets/BudgetForm';
 
 // Mappatura icone backend a emoji (stessa delle categorie)
@@ -75,40 +74,82 @@ const BudgetsPage = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedBudget, setSelectedBudget] = useState(null);
 
-  // Carica categorie
-  const { 
-    data: categoriesData, 
-    loading: categoriesLoading 
-  } = useApi(categoryAPI.getCategories, [], true);
+  // Stati per categorie - gestione manuale
+  const [categoriesData, setCategoriesData] = useState(null);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
-  // Funzioni stabilizzate per caricare budget
-  const fetchBudgets = useCallback(() => {
-    return budgetAPI.getBudgets({
-      month: selectedMonth,
-      year: selectedYear,
-    });
-  }, [selectedMonth, selectedYear]);
+  // Stati per budget - gestione manuale
+  const [budgetsData, setBudgetsData] = useState(null);
+  const [budgetsLoading, setBudgetsLoading] = useState(true);
+  const [budgetsError, setBudgetsError] = useState(null);
 
-  const fetchBudgetSummary = useCallback(() => {
-    return budgetAPI.getBudgetSummary({
-      month: selectedMonth,
-      year: selectedYear,
-    });
-  }, [selectedMonth, selectedYear]);
+  // Stati per riassunto - gestione manuale
+  const [summaryData, setSummaryData] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(true);
 
-  // Carica budget con filtri
-  const { 
-    data: budgetsData, 
-    loading: budgetsLoading, 
-    error: budgetsError,
-    refetch: refetchBudgets 
-  } = useApi(fetchBudgets, [selectedMonth, selectedYear], true);
+  // Parametri stabilizzati
+  const fetchParams = useMemo(() => ({
+    month: selectedMonth,
+    year: selectedYear,
+    familyId: undefined // Sarà gestito dal backend
+  }), [selectedMonth, selectedYear]);
 
-  // Carica riassunto budget
-  const { 
-    data: summaryData, 
-    loading: summaryLoading 
-  } = useApi(fetchBudgetSummary, [selectedMonth, selectedYear], true);
+  // Carica categorie una sola volta
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const response = await categoryAPI.getCategories();
+        setCategoriesData(response.data);
+      } catch (error) {
+        console.error('❌ Errore caricamento categorie:', error);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    loadCategories();
+  }, []);
+
+  // Carica budget
+  const loadBudgets = useCallback(async () => {
+    try {
+      setBudgetsLoading(true);
+      setBudgetsError(null);
+      const response = await budgetAPI.getBudgets(fetchParams);
+      setBudgetsData(response.data);
+    } catch (error) {
+      console.error('❌ Errore caricamento budget:', error);
+      setBudgetsError(error.response?.data?.message || 'Errore nel caricamento dei budget');
+    } finally {
+      setBudgetsLoading(false);
+    }
+  }, [fetchParams]);
+
+  // Carica riassunto
+  const loadSummary = useCallback(async () => {
+    try {
+      setSummaryLoading(true);
+      const response = await budgetAPI.getBudgetSummary(fetchParams);
+      setSummaryData(response.data);
+    } catch (error) {
+      console.error('❌ Errore caricamento riassunto:', error);
+    } finally {
+      setSummaryLoading(false);
+    }
+  }, [fetchParams]);
+
+  // Carica dati quando cambiano i parametri
+  useEffect(() => {
+    loadBudgets();
+    loadSummary();
+  }, [loadBudgets, loadSummary]);
+
+  // Funzione refetch per uso esterno
+  const refetchBudgets = useCallback(() => {
+    loadBudgets();
+    loadSummary();
+  }, [loadBudgets, loadSummary]);
 
   const budgets = budgetsData?.data?.budgets || [];
   const summary = summaryData?.data?.summary || {};

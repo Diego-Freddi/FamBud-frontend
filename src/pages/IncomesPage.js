@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -45,6 +45,8 @@ import {
   FileDownloadOutlined,
   SortOutlined,
   RepeatOutlined,
+  ArrowUpwardOutlined,
+  ArrowDownwardOutlined,
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -52,7 +54,6 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { it } from 'date-fns/locale';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { incomeAPI } from '../services/api';
-import { useApi } from '../hooks/useApi';
 import IncomeForm from '../components/Incomes/IncomeForm';
 
 const IncomesPage = () => {
@@ -68,12 +69,12 @@ const IncomesPage = () => {
   // Stati per filtri e ricerca
   const [filters, setFilters] = useState({
     search: '',
-    source: '',
-    dateFrom: startOfMonth(new Date()),
-    dateTo: endOfMonth(new Date()),
+    source: 'all',
+    startDate: startOfMonth(new Date()),
+    endDate: endOfMonth(new Date()),
     minAmount: '',
     maxAmount: '',
-    isRecurring: '',
+    isRecurring: 'all',
   });
   
   // Stati per paginazione e ordinamento
@@ -86,35 +87,140 @@ const IncomesPage = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedIncome, setSelectedIncome] = useState(null);
 
-  // Funzione stabilizzata per caricare entrate
-  const fetchIncomes = useCallback(() => {
-    return incomeAPI.getIncomes({
+  // Stati per entrate - gestione manuale
+  const [incomesData, setIncomesData] = useState(null);
+  const [incomesLoading, setIncomesLoading] = useState(true);
+  const [incomesError, setIncomesError] = useState(null);
+
+  // Stabilizza i parametri per evitare loop infiniti
+  const apiParams = useMemo(() => {
+    // Ordinamenti supportati dal server
+    const serverSortFields = ['date', 'description', 'amount'];
+    const useServerSort = serverSortFields.includes(sortBy);
+    
+    // Se la ricerca è < 3 caratteri, non inviare il parametro search al backend
+    // Così il backend restituisce tutti i risultati e il frontend fa la ricerca estesa
+    const useBackendSearch = filters.search && filters.search.length >= 3;
+    
+    return {
       page,
       limit: 10,
-      search: filters.search || undefined,
-      source: filters.source || undefined,
-      dateFrom: filters.dateFrom ? filters.dateFrom.toISOString() : undefined,
-      dateTo: filters.dateTo ? filters.dateTo.toISOString() : undefined,
+      // Non inviare search al backend se facciamo ricerca frontend
+      search: useBackendSearch ? undefined : undefined,
+      source: filters.source === 'all' ? undefined : filters.source,
+      startDate: filters.startDate ? filters.startDate.toISOString() : undefined,
+      endDate: filters.endDate ? filters.endDate.toISOString() : undefined,
       minAmount: filters.minAmount || undefined,
       maxAmount: filters.maxAmount || undefined,
-      isRecurring: filters.isRecurring !== '' ? filters.isRecurring : undefined,
-      sortBy,
-      sortOrder,
-    });
-  }, [page, filters, sortBy, sortOrder]);
+      isRecurring: filters.isRecurring === 'all' ? undefined : filters.isRecurring,
+      // Solo per ordinamenti supportati dal server
+      sortBy: useServerSort ? sortBy : 'date',
+      sortOrder: useServerSort ? sortOrder : 'desc',
+    };
+  }, [page, filters.source, filters.startDate, filters.endDate, filters.minAmount, filters.maxAmount, filters.isRecurring, sortBy, sortOrder]);
 
-  // Carica entrate con filtri
-  const { 
-    data: incomesData, 
-    loading: incomesLoading, 
-    error: incomesError,
-    refetch: refetchIncomes 
-  } = useApi(fetchIncomes, [page, filters, sortBy, sortOrder], true);
+  // Funzione per caricare entrate
+  const loadIncomes = useCallback(async () => {
+    try {
+      setIncomesLoading(true);
+      setIncomesError(null);
+      const response = await incomeAPI.getIncomes(apiParams);
+      setIncomesData(response.data);
+    } catch (error) {
+      console.error('❌ Errore caricamento entrate:', error);
+      setIncomesError(error.response?.data?.message || 'Errore nel caricamento delle entrate');
+    } finally {
+      setIncomesLoading(false);
+    }
+  }, [apiParams]);
+
+  // Carica entrate quando cambiano i parametri
+  useEffect(() => {
+    loadIncomes();
+  }, [loadIncomes]);
+
+  // Funzione refetch per uso esterno
+  const refetchIncomes = useCallback(() => {
+    return loadIncomes();
+  }, [loadIncomes]);
 
   const incomes = incomesData?.data?.incomes || [];
   const pagination = incomesData?.data?.pagination || {};
   const totalPages = pagination.pages || 1;
   const totalIncomes = pagination.total || 0;
+
+  // Fonti comuni per il filtro
+  const commonSources = [
+    { value: 'salary', label: 'Stipendio' },
+    { value: 'freelance', label: 'Freelance' },
+    { value: 'bonus', label: 'Bonus' },
+    { value: 'investment', label: 'Investimenti' },
+    { value: 'rental', label: 'Affitto' },
+    { value: 'gift', label: 'Regalo' },
+    { value: 'refund', label: 'Rimborso' },
+    { value: 'other', label: 'Altro' },
+  ];
+
+  // Funzione per ottenere il label della fonte
+  const getSourceLabel = (sourceValue) => {
+    const source = commonSources.find(s => s.value === sourceValue);
+    return source ? source.label : sourceValue;
+  };
+
+  // Funzione per ordinamento locale (per campi popolati come utente)
+  const sortIncomesLocally = useMemo(() => {
+    if (!incomes.length) return incomes;
+    
+    // Solo per ordinamenti locali (utente e fonte)
+    if (sortBy === 'user' || sortBy === 'source') {
+      const sorted = [...incomes].sort((a, b) => {
+        let valueA, valueB;
+        
+        if (sortBy === 'user') {
+          valueA = a.userId?.name || '';
+          valueB = b.userId?.name || '';
+        } else if (sortBy === 'source') {
+          valueA = getSourceLabel(a.source) || '';
+          valueB = getSourceLabel(b.source) || '';
+        }
+        
+        const comparison = valueA.localeCompare(valueB, 'it', { sensitivity: 'base' });
+        return sortOrder === 'desc' ? -comparison : comparison;
+      });
+      
+      return sorted;
+    }
+    
+    // Per altri ordinamenti, usa i dati dal server
+    return incomes;
+  }, [incomes, sortBy, sortOrder, getSourceLabel]);
+
+  // Funzione per filtrare localmente per ricerca estesa (utente e fonte)
+  const filteredIncomes = useMemo(() => {
+    if (!filters.search || filters.search.length < 3) {
+      return sortIncomesLocally;
+    }
+
+    const searchTerm = filters.search.toLowerCase();
+    
+    return sortIncomesLocally.filter(income => {
+      // Ricerca in utente
+      const userName = income.userId?.name?.toLowerCase() || '';
+      const userMatch = userName.includes(searchTerm);
+      
+      // Ricerca in descrizione
+      const descriptionMatch = income.description?.toLowerCase().includes(searchTerm) || false;
+      
+      // Ricerca in fonte (usando la label tradotta)
+      const sourceLabel = getSourceLabel(income.source)?.toLowerCase() || '';
+      const sourceMatch = sourceLabel.includes(searchTerm);
+      
+      // Ricerca in note
+      const notesMatch = income.notes?.toLowerCase().includes(searchTerm) || false;
+      
+      return userMatch || descriptionMatch || sourceMatch || notesMatch;
+    });
+  }, [sortIncomesLocally, filters.search, getSourceLabel]);
 
   // Gestione filtri
   const handleFilterChange = (field, value) => {
@@ -125,12 +231,12 @@ const IncomesPage = () => {
   const clearFilters = () => {
     setFilters({
       search: '',
-      source: '',
-      dateFrom: startOfMonth(new Date()),
-      dateTo: endOfMonth(new Date()),
+      source: 'all',
+      startDate: startOfMonth(new Date()),
+      endDate: endOfMonth(new Date()),
       minAmount: '',
       maxAmount: '',
-      isRecurring: '',
+      isRecurring: 'all',
     });
     setPage(1);
   };
@@ -218,24 +324,6 @@ const IncomesPage = () => {
     return typeLabels[income.recurringPattern?.frequency] || 'Ricorrente';
   };
 
-  // Fonti comuni per il filtro
-  const commonSources = [
-    { value: 'salary', label: 'Stipendio' },
-    { value: 'freelance', label: 'Freelance' },
-    { value: 'bonus', label: 'Bonus' },
-    { value: 'investment', label: 'Investimenti' },
-    { value: 'rental', label: 'Affitto' },
-    { value: 'gift', label: 'Regalo' },
-    { value: 'refund', label: 'Rimborso' },
-    { value: 'other', label: 'Altro' },
-  ];
-
-  // Funzione per ottenere il label della fonte
-  const getSourceLabel = (sourceValue) => {
-    const source = commonSources.find(s => s.value === sourceValue);
-    return source ? source.label : sourceValue;
-  };
-
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={it}>
       <Box>
@@ -281,10 +369,10 @@ const IncomesPage = () => {
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={4}>
                     <TextField
-                      fullWidth
-                      label="Cerca"
+                      size="small"
+                      placeholder="Cerca in descrizione, fonte, utente, note... (min 3 caratteri)"
                       value={filters.search}
-                      onChange={(e) => handleFilterChange('search', e.target.value)}
+                      onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -292,6 +380,7 @@ const IncomesPage = () => {
                           </InputAdornment>
                         ),
                       }}
+                      sx={{ minWidth: 300 }}
                     />
                   </Grid>
                   
@@ -303,7 +392,9 @@ const IncomesPage = () => {
                         label="Fonte"
                         onChange={(e) => handleFilterChange('source', e.target.value)}
                       >
-                        <MenuItem value="">Tutte le fonti</MenuItem>
+                        <MenuItem value="all">
+                          Tutte le fonti
+                        </MenuItem>
                         {commonSources.map((source) => (
                           <MenuItem key={source.value} value={source.value}>
                             {source.label}
@@ -321,7 +412,9 @@ const IncomesPage = () => {
                         label="Ricorrenza"
                         onChange={(e) => handleFilterChange('isRecurring', e.target.value)}
                       >
-                        <MenuItem value="">Tutte</MenuItem>
+                        <MenuItem value="all">
+                          Tutte
+                        </MenuItem>
                         <MenuItem value={true}>Solo ricorrenti</MenuItem>
                         <MenuItem value={false}>Solo singole</MenuItem>
                       </Select>
@@ -331,8 +424,8 @@ const IncomesPage = () => {
                   <Grid item xs={6} md={3}>
                     <DatePicker
                       label="Da"
-                      value={filters.dateFrom}
-                      onChange={(date) => handleFilterChange('dateFrom', date)}
+                      value={filters.startDate}
+                      onChange={(date) => handleFilterChange('startDate', date)}
                       slotProps={{
                         textField: { fullWidth: true, size: 'small' }
                       }}
@@ -342,8 +435,8 @@ const IncomesPage = () => {
                   <Grid item xs={6} md={3}>
                     <DatePicker
                       label="A"
-                      value={filters.dateTo}
-                      onChange={(date) => handleFilterChange('dateTo', date)}
+                      value={filters.endDate}
+                      onChange={(date) => handleFilterChange('endDate', date)}
                       slotProps={{
                         textField: { fullWidth: true, size: 'small' }
                       }}
@@ -444,7 +537,15 @@ const IncomesPage = () => {
                     <Button
                       size="small"
                       onClick={() => handleSort('date')}
-                      startIcon={<SortOutlined />}
+                      startIcon={
+                        sortBy === 'date' ? (
+                          sortOrder === 'desc' ? <ArrowDownwardOutlined /> : <ArrowUpwardOutlined />
+                        ) : (
+                          <SortOutlined />
+                        )
+                      }
+                      variant={sortBy === 'date' ? 'contained' : 'text'}
+                      color={sortBy === 'date' ? 'primary' : 'inherit'}
                     >
                       Data
                     </Button>
@@ -453,6 +554,15 @@ const IncomesPage = () => {
                     <Button
                       size="small"
                       onClick={() => handleSort('description')}
+                      startIcon={
+                        sortBy === 'description' ? (
+                          sortOrder === 'desc' ? <ArrowDownwardOutlined /> : <ArrowUpwardOutlined />
+                        ) : (
+                          <SortOutlined />
+                        )
+                      }
+                      variant={sortBy === 'description' ? 'contained' : 'text'}
+                      color={sortBy === 'description' ? 'primary' : 'inherit'}
                     >
                       Descrizione
                     </Button>
@@ -461,6 +571,15 @@ const IncomesPage = () => {
                     <Button
                       size="small"
                       onClick={() => handleSort('amount')}
+                      startIcon={
+                        sortBy === 'amount' ? (
+                          sortOrder === 'desc' ? <ArrowDownwardOutlined /> : <ArrowUpwardOutlined />
+                        ) : (
+                          <SortOutlined />
+                        )
+                      }
+                      variant={sortBy === 'amount' ? 'contained' : 'text'}
+                      color={sortBy === 'amount' ? 'primary' : 'inherit'}
                     >
                       Importo
                     </Button>
@@ -468,14 +587,38 @@ const IncomesPage = () => {
                   {!isMobile && (
                     <>
                       <Grid item md={2}>
-                        <Typography variant="body2" color="text.secondary">
+                        <Button
+                          size="small"
+                          onClick={() => handleSort('source')}
+                          startIcon={
+                            sortBy === 'source' ? (
+                              sortOrder === 'desc' ? <ArrowDownwardOutlined /> : <ArrowUpwardOutlined />
+                            ) : (
+                              <SortOutlined />
+                            )
+                          }
+                          variant={sortBy === 'source' ? 'contained' : 'text'}
+                          color={sortBy === 'source' ? 'primary' : 'inherit'}
+                        >
                           Fonte
-                        </Typography>
+                        </Button>
                       </Grid>
                       <Grid item md={2}>
-                        <Typography variant="body2" color="text.secondary">
+                        <Button
+                          size="small"
+                          onClick={() => handleSort('type')}
+                          startIcon={
+                            sortBy === 'type' ? (
+                              sortOrder === 'desc' ? <ArrowDownwardOutlined /> : <ArrowUpwardOutlined />
+                            ) : (
+                              <SortOutlined />
+                            )
+                          }
+                          variant={sortBy === 'type' ? 'contained' : 'text'}
+                          color={sortBy === 'type' ? 'primary' : 'inherit'}
+                        >
                           Tipo
-                        </Typography>
+                        </Button>
                       </Grid>
                     </>
                   )}
@@ -485,7 +628,7 @@ const IncomesPage = () => {
             </Card>
 
             {/* Lista entrate */}
-            {incomes.map((income) => {
+            {filteredIncomes.map((income) => {
               const recurringLabel = getRecurringLabel(income);
               
               return (
@@ -579,7 +722,7 @@ const IncomesPage = () => {
             })}
 
             {/* Paginazione */}
-            {totalPages > 1 && (
+            {totalPages > 1 && (!filters.search || filters.search.length < 3) && (
               <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
                 <Pagination
                   count={totalPages}
@@ -587,6 +730,15 @@ const IncomesPage = () => {
                   onChange={(e, newPage) => setPage(newPage)}
                   color="primary"
                 />
+              </Box>
+            )}
+
+            {/* Messaggio quando si usa ricerca frontend */}
+            {filters.search && filters.search.length >= 3 && (
+              <Box sx={{ textAlign: 'center', mt: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Mostrando {filteredIncomes.length} risultati per "{filters.search}"
+                </Typography>
               </Box>
             )}
           </>
