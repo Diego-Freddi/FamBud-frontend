@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
@@ -22,15 +22,39 @@ import { registerSchema } from '../utils/validationSchemas';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { register: registerUser, isAuthenticated, error, clearError } = useAuth();
   const [submitLoading, setSubmitLoading] = useState(false);
+
+  // Controlla se c'è un messaggio dallo state (da JoinFamilyPage)
+  const stateMessage = location.state?.message;
+  
+  // Controlla se l'utente arriva da un invito (solo se c'è il messaggio di stato)
+  const isFromInvite = stateMessage && stateMessage.includes('invito');
+  
+  // Controlla se c'è un token di invito pendente SOLO se arriva da invito
+  const pendingToken = isFromInvite ? localStorage.getItem('pendingInviteToken') : null;
 
   // Redirect se già autenticato
   useEffect(() => {
     if (isAuthenticated) {
+      // Controlla se c'è un token di invito pendente E se l'utente arriva da un invito
+      if (pendingToken && isFromInvite) {
+        navigate(`/join-family/${pendingToken}`, { replace: true });
+        return;
+      }
+      
+      // Se non arriva da un invito, pulisci eventuali token pendenti
+      if (!isFromInvite) {
+        const anyPendingToken = localStorage.getItem('pendingInviteToken');
+        if (anyPendingToken) {
+          localStorage.removeItem('pendingInviteToken');
+        }
+      }
+      
       navigate('/dashboard', { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, pendingToken, isFromInvite]);
 
   // Form setup
   const {
@@ -46,7 +70,7 @@ const RegisterPage = () => {
       email: '',
       password: '',
       confirmPassword: '',
-      createFamily: false,
+      createFamily: !pendingToken, // Se c'è un invito pendente, non creare famiglia
       familyName: '',
     },
   });
@@ -67,7 +91,21 @@ const RegisterPage = () => {
       const result = await registerUser(data);
       
       if (result.success) {
-        // Registrazione riuscita
+        // Registrazione riuscita, controlla se c'è un token di invito pendente E se arriva da invito
+        if (pendingToken && isFromInvite) {
+          navigate(`/join-family/${pendingToken}`, { replace: true });
+          return;
+        }
+        
+        // Se non arriva da un invito, pulisci eventuali token pendenti
+        if (!isFromInvite) {
+          const anyPendingToken = localStorage.getItem('pendingInviteToken');
+          if (anyPendingToken) {
+            localStorage.removeItem('pendingInviteToken');
+          }
+        }
+        
+        // Altrimenti redirect normale
         navigate('/dashboard', { replace: true });
       } else {
         // Errore dal server
@@ -121,12 +159,29 @@ const RegisterPage = () => {
           </Box>
 
           <Typography variant="h5" component="h2" gutterBottom>
-            Crea il tuo account
+            {pendingToken ? 'Registrati per accettare l\'invito' : 'Crea il tuo account'}
           </Typography>
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Inizia a gestire le finanze della tua famiglia oggi stesso
+            {pendingToken 
+              ? 'Completa la registrazione per unirti alla famiglia'
+              : 'Inizia a gestire le finanze della tua famiglia oggi stesso'
+            }
           </Typography>
+
+          {/* Messaggio da JoinFamilyPage */}
+          {stateMessage && (
+            <Alert severity="info" sx={{ width: '100%', mb: 2 }}>
+              {stateMessage}
+            </Alert>
+          )}
+
+          {/* Avviso invito pendente */}
+          {pendingToken && (
+            <Alert severity="info" sx={{ width: '100%', mb: 2 }}>
+              Hai un invito famiglia pendente. Dopo la registrazione verrai automaticamente reindirizzato per accettarlo.
+            </Alert>
+          )}
 
           {/* Errore globale */}
           {error && (
@@ -189,27 +244,30 @@ const RegisterPage = () => {
               disabled={submitLoading}
             />
 
-            <FormControlLabel
-              control={
-                <Checkbox
-                  {...register('createFamily')}
-                  disabled={submitLoading}
-                />
-              }
-              label="Crea una nuova famiglia"
-              sx={{ mt: 2, mb: 1 }}
-            />
+            {/* Mostra opzione creazione famiglia solo se non c'è invito pendente */}
+            {!pendingToken && (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    {...register('createFamily')}
+                    disabled={submitLoading}
+                  />
+                }
+                label="Crea una nuova famiglia"
+                sx={{ mt: 2, mb: 1 }}
+              />
+            )}
 
-            {watchCreateFamily && (
+            {/* Campo nome famiglia condizionale */}
+            {watchCreateFamily && !pendingToken && (
               <TextField
                 {...register('familyName')}
                 fullWidth
-                label="Nome della famiglia"
+                label="Nome famiglia"
                 margin="normal"
                 error={!!errors.familyName}
-                helperText={errors.familyName?.message}
+                helperText={errors.familyName?.message || 'Inserisci il nome della tua famiglia'}
                 disabled={submitLoading}
-                placeholder="es. Famiglia Rossi"
               />
             )}
 

@@ -24,13 +24,31 @@ const LoginPage = () => {
   const { login, isAuthenticated, isLoading, error, clearError } = useAuth();
   const [submitLoading, setSubmitLoading] = useState(false);
 
+  // Controlla se c'è un messaggio dallo state (da JoinFamilyPage)
+  const stateMessage = location.state?.message;
+  
+  // Controlla se l'utente arriva da un invito (solo se c'è il messaggio di stato)
+  const isFromInvite = stateMessage && stateMessage.includes('invito');
+
   // Redirect se già autenticato
   useEffect(() => {
     if (isAuthenticated) {
+      // Controlla se c'è un token di invito pendente E se l'utente arriva da un invito
+      const pendingToken = localStorage.getItem('pendingInviteToken');
+      if (pendingToken && isFromInvite) {
+        navigate(`/join-family/${pendingToken}`, { replace: true });
+        return;
+      }
+      
+      // Se non arriva da un invito, pulisci eventuali token pendenti e vai alla dashboard
+      if (!isFromInvite && pendingToken) {
+        localStorage.removeItem('pendingInviteToken');
+      }
+      
       const from = location.state?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate, location]);
+  }, [isAuthenticated, navigate, isFromInvite]);
 
   // Form setup
   const {
@@ -60,7 +78,19 @@ const LoginPage = () => {
       const result = await login(data);
       
       if (result.success) {
-        // Login riuscito, il redirect avverrà tramite useEffect
+        // Login riuscito, controlla se c'è un token di invito pendente E se arriva da invito
+        const pendingToken = localStorage.getItem('pendingInviteToken');
+        if (pendingToken && isFromInvite) {
+          navigate(`/join-family/${pendingToken}`, { replace: true });
+          return;
+        }
+        
+        // Se non arriva da un invito, pulisci eventuali token pendenti
+        if (!isFromInvite && pendingToken) {
+          localStorage.removeItem('pendingInviteToken');
+        }
+        
+        // Altrimenti redirect normale
         const from = location.state?.from?.pathname || '/dashboard';
         navigate(from, { replace: true });
       } else {
@@ -135,6 +165,13 @@ const LoginPage = () => {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             Gestisci le finanze della tua famiglia in modo semplice e sicuro
           </Typography>
+
+          {/* Messaggio da JoinFamilyPage */}
+          {stateMessage && (
+            <Alert severity="info" sx={{ width: '100%', mb: 2 }}>
+              {stateMessage}
+            </Alert>
+          )}
 
           {/* Errore globale */}
           {error && (

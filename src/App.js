@@ -13,6 +13,7 @@ import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import CreateFamilyPage from './pages/CreateFamilyPage';
+import JoinFamilyPage from './pages/JoinFamilyPage';
 import DashboardPage from './pages/DashboardPage';
 import ExpensesPage from './pages/ExpensesPage';
 import IncomesPage from './pages/IncomesPage';
@@ -32,6 +33,9 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+            
+            {/* Route per inviti famiglia - accessibile senza autenticazione */}
+            <Route path="/join-family/:token" element={<JoinFamilyPage />} />
             
             {/* Route per creazione famiglia */}
             <Route 
