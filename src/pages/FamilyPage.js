@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -45,12 +45,11 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { familyAPI } from '../services/api';
 import MemberStats from '../components/MemberStats';
+import useApiCall from '../hooks/useApiCall';
 
 const FamilyPage = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
-  const [familyData, setFamilyData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
   // Stati per dialoghi
@@ -65,31 +64,31 @@ const FamilyPage = () => {
   const [familyName, setFamilyName] = useState('');
   const [familyDescription, setFamilyDescription] = useState('');
 
-  // Carica dati famiglia
-  const fetchFamilyData = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const response = await familyAPI.getFamily();
-      
-      if (response.data.success) {
-        const familyInfo = response.data.data.family;
-        setFamilyData(familyInfo);
-        setFamilyName(familyInfo.name);
-        setFamilyDescription(familyInfo.description || '');
-      } else {
-        setError(response.data.message || 'Errore nel caricamento famiglia');
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Errore di rete');
-    } finally {
-      setLoading(false);
+  // Funzione API per dati famiglia
+  const fetchFamilyData = useCallback(async () => {
+    const response = await familyAPI.getFamily();
+    
+    if (response.data.success) {
+      const familyInfo = response.data.data.family;
+      // Inizializza i campi del form
+      setFamilyName(familyInfo.name);
+      setFamilyDescription(familyInfo.description || '');
+      return response;
+    } else {
+      throw new Error(response.data.message || 'Errore nel caricamento famiglia');
     }
-  };
-
-  useEffect(() => {
-    fetchFamilyData();
   }, []);
+
+  // Uso l'hook per gestire la chiamata API
+  const { data: familyResponse, loading, error: apiError, refetch } = useApiCall(fetchFamilyData, []);
+
+  // Estraggo i dati dalla risposta
+  const familyData = familyResponse?.data?.family || null;
+
+  // Funzione refetch per le altre operazioni (mantengo la stessa interfaccia)
+  const refetchFamilyData = () => {
+    refetch();
+  };
 
   // Gestione invito membro
   const handleInviteMember = async () => {
@@ -106,7 +105,7 @@ const FamilyPage = () => {
         setInviteDialogOpen(false);
         setInviteEmail('');
         setInviteRole('member');
-        fetchFamilyData(); // Ricarica dati
+        refetchFamilyData(); // Ricarica dati
       } else {
         setError(response.data.message || 'Errore nell\'invio invito');
       }
@@ -133,7 +132,7 @@ const FamilyPage = () => {
     try {
       const response = await familyAPI.removeMember(memberId);
       if (response.data.success) {
-        fetchFamilyData();
+        refetchFamilyData();
         handleMemberMenuClose();
       } else {
         setError(response.data.message || 'Errore nella rimozione membro');
@@ -148,7 +147,7 @@ const FamilyPage = () => {
     try {
       const response = await familyAPI.updateMemberRole(memberId, newRole);
       if (response.data.success) {
-        fetchFamilyData();
+        refetchFamilyData();
         handleMemberMenuClose();
       } else {
         setError(response.data.message || 'Errore nel cambio ruolo');
@@ -163,7 +162,7 @@ const FamilyPage = () => {
     try {
       const response = await familyAPI.cancelInvitation(invitationId);
       if (response.data.success) {
-        fetchFamilyData();
+        refetchFamilyData();
       } else {
         setError(response.data.message || 'Errore nella cancellazione invito');
       }
@@ -181,7 +180,7 @@ const FamilyPage = () => {
       });
       
       if (response.data.success) {
-        fetchFamilyData();
+        refetchFamilyData();
         setError(''); // Pulisci eventuali errori precedenti
       } else {
         setError(response.data.message || 'Errore nel salvataggio impostazioni');
@@ -230,13 +229,13 @@ const FamilyPage = () => {
     );
   }
 
-  if (error && !familyData) {
+  if (apiError && !familyData) {
     return (
       <Box>
         <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
+          {apiError}
         </Alert>
-        <Button onClick={fetchFamilyData} startIcon={<RefreshOutlined />}>
+        <Button onClick={refetchFamilyData} startIcon={<RefreshOutlined />}>
           Riprova
         </Button>
       </Box>
@@ -257,7 +256,7 @@ const FamilyPage = () => {
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <IconButton onClick={fetchFamilyData} title="Aggiorna">
+            <IconButton onClick={refetchFamilyData} title="Aggiorna">
               <RefreshOutlined />
             </IconButton>
             {isUserAdmin() && (

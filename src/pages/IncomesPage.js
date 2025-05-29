@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -55,6 +55,7 @@ import { it } from 'date-fns/locale';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { incomeAPI } from '../services/api';
 import IncomeForm from '../components/Incomes/IncomeForm';
+import useApiCall from '../hooks/useApiCall';
 
 const IncomesPage = () => {
   const theme = useTheme();
@@ -87,11 +88,6 @@ const IncomesPage = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedIncome, setSelectedIncome] = useState(null);
 
-  // Stati per entrate - gestione manuale
-  const [incomesData, setIncomesData] = useState(null);
-  const [incomesLoading, setIncomesLoading] = useState(true);
-  const [incomesError, setIncomesError] = useState(null);
-
   // Stabilizza i parametri per evitare loop infiniti
   const apiParams = useMemo(() => {
     // Ordinamenti supportati dal server
@@ -119,33 +115,17 @@ const IncomesPage = () => {
     };
   }, [page, filters.source, filters.startDate, filters.endDate, filters.minAmount, filters.maxAmount, filters.isRecurring, sortBy, sortOrder]);
 
-  // Funzione per caricare entrate
-  const loadIncomes = useCallback(async () => {
-    try {
-      setIncomesLoading(true);
-      setIncomesError(null);
-      const response = await incomeAPI.getIncomes(apiParams);
-      setIncomesData(response.data);
-    } catch (error) {
-      console.error('❌ Errore caricamento entrate:', error);
-      setIncomesError(error.response?.data?.message || 'Errore nel caricamento delle entrate');
-    } finally {
-      setIncomesLoading(false);
-    }
+  // Funzione API
+  const fetchIncomes = useCallback(async () => {
+    return await incomeAPI.getIncomes(apiParams);
   }, [apiParams]);
 
-  // Carica entrate quando cambiano i parametri
-  useEffect(() => {
-    loadIncomes();
-  }, [loadIncomes]);
+  // Uso l'hook per gestire la chiamata API
+  const { data: incomesResponse, loading: incomesLoading, error: incomesError, refetch: refetchIncomes } = useApiCall(fetchIncomes, [apiParams]);
 
-  // Funzione refetch per uso esterno
-  const refetchIncomes = useCallback(() => {
-    return loadIncomes();
-  }, [loadIncomes]);
-
-  const incomes = incomesData?.data?.incomes || [];
-  const pagination = incomesData?.data?.pagination || {};
+  // Estraggo i dati dalla risposta
+  const incomes = incomesResponse?.data?.incomes || [];
+  const pagination = incomesResponse?.data?.pagination || {};
   const totalPages = pagination.pages || 1;
   const totalIncomes = pagination.total || 0;
 
@@ -285,7 +265,7 @@ const IncomesPage = () => {
     refetchIncomes();
     setFormOpen(false);
     setEditingIncome(null);
-  }, []);
+  }, [refetchIncomes]);
 
   // Menu azioni
   const handleMenuOpen = (event, income) => {

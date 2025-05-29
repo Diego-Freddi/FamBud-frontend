@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   Typography,
   Box,
@@ -25,6 +25,7 @@ import ExpensesPieChart from '../components/Dashboard/ExpensesPieChart';
 import MonthlyTrendChart from '../components/Dashboard/MonthlyTrendChart';
 import RecentTransactions from '../components/Dashboard/RecentTransactions';
 import BudgetAlerts from '../components/Dashboard/BudgetAlerts';
+import useApiCall from '../hooks/useApiCall';
 import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050/api';
@@ -35,8 +36,26 @@ const DashboardPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
-  // Stati per dashboard - gestione manuale
-  const [dashboardData, setDashboardData] = useState({
+  // Funzione API per dashboard
+  const fetchDashboardData = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('Token di autenticazione non trovato');
+    }
+
+    return await axios.get(`${API_BASE_URL}/dashboard`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+  }, []);
+
+  // Uso l'hook per gestire la chiamata API
+  const { data: dashboardResponse, loading, error, refetch } = useApiCall(fetchDashboardData, []);
+
+  // Estraggo i dati dalla risposta (mantenendo la stessa struttura)
+  const dashboardData = dashboardResponse?.data || {
     stats: {
       monthlyExpenses: 0,
       monthlyIncome: 0,
@@ -51,52 +70,7 @@ const DashboardPage = () => {
     },
     recentTransactions: [],
     budgetAlerts: []
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Funzione per caricare dati dashboard
-  const loadDashboardData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Token di autenticazione non trovato');
-      }
-
-      // UNA SOLA CHIAMATA API per tutti i dati
-      const response = await axios.get(`${API_BASE_URL}/dashboard`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.data.success) {
-        setDashboardData(response.data.data);
-      } else {
-        throw new Error(response.data.message || 'Errore nel caricamento dati');
-      }
-      
-    } catch (err) {
-      console.error('❌ Errore caricamento dashboard:', err);
-      setError(err.response?.data?.message || err.message || 'Errore di rete');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Carica dati una sola volta al mount
-  useEffect(() => {
-    loadDashboardData();
-  }, []); // Dipendenze vuote - carica solo una volta
-
-  // Funzione refetch per uso esterno
-  const refetch = useCallback(() => {
-    return loadDashboardData();
-  }, [loadDashboardData]);
+  };
 
   const currentMonth = new Intl.DateTimeFormat('it-IT', { 
     month: 'long', 

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -53,6 +53,7 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { expenseAPI, categoryAPI } from '../services/api';
 import ExpenseForm from '../components/Expenses/ExpenseForm';
 import { categoryColors } from '../styles/theme';
+import useApiCall from '../hooks/useApiCall';
 
 const ExpensesPage = () => {
   const theme = useTheme();
@@ -90,32 +91,6 @@ const ExpensesPage = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedExpense, setSelectedExpense] = useState(null);
 
-  // Stati per categorie - gestione manuale
-  const [categoriesData, setCategoriesData] = useState(null);
-  const [categoriesLoading, setCategoriesLoading] = useState(true);
-
-  // Stati per spese - gestione manuale
-  const [expensesData, setExpensesData] = useState(null);
-  const [expensesLoading, setExpensesLoading] = useState(true);
-  const [expensesError, setExpensesError] = useState(null);
-
-  // Carica categorie una sola volta
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        setCategoriesLoading(true);
-        const response = await categoryAPI.getCategories();
-        setCategoriesData(response.data);
-      } catch (error) {
-        console.error('❌ Errore caricamento categorie:', error);
-      } finally {
-        setCategoriesLoading(false);
-      }
-    };
-
-    loadCategories();
-  }, []); // Dipendenze vuote - carica solo una volta
-
   // Stabilizza i parametri per evitare loop infiniti
   const apiParams = useMemo(() => {
     // Ordinamenti supportati dal server
@@ -142,36 +117,25 @@ const ExpensesPage = () => {
     };
   }, [page, filters.category, filters.startDate, filters.endDate, filters.minAmount, filters.maxAmount, sortBy, sortOrder]);
 
-  // Funzione per caricare spese
-  const loadExpenses = useCallback(async () => {
-    try {
-      setExpensesLoading(true);
-      setExpensesError(null);
-      const response = await expenseAPI.getExpenses(apiParams);
-      setExpensesData(response.data);
-    } catch (error) {
-      console.error('❌ Errore caricamento spese:', error);
-      setExpensesError(error.response?.data?.message || 'Errore nel caricamento delle spese');
-    } finally {
-      setExpensesLoading(false);
-    }
+  // Funzioni API
+  const fetchCategories = useCallback(async () => {
+    return await categoryAPI.getCategories();
+  }, []);
+
+  const fetchExpenses = useCallback(async () => {
+    return await expenseAPI.getExpenses(apiParams);
   }, [apiParams]);
 
-  // Carica spese quando cambiano i parametri
-  useEffect(() => {
-    loadExpenses();
-  }, [loadExpenses]);
+  // Uso l'hook per gestire le chiamate API
+  const { data: categoriesResponse, loading: categoriesLoading, refetch: refetchCategories } = useApiCall(fetchCategories, []);
+  const { data: expensesResponse, loading: expensesLoading, error: expensesError, refetch: refetchExpenses } = useApiCall(fetchExpenses, [apiParams]);
 
-  // Funzione refetch per uso esterno
-  const refetchExpenses = useCallback(() => {
-    return loadExpenses();
-  }, [loadExpenses]);
-
-  const expenses = expensesData?.data?.expenses || [];
-  const pagination = expensesData?.data?.pagination || {};
+  // Estraggo i dati dalle risposte
+  const categories = categoriesResponse?.data?.categories || [];
+  const expenses = expensesResponse?.data?.expenses || [];
+  const pagination = expensesResponse?.data?.pagination || {};
   const totalPages = pagination.pages || 1;
   const totalExpenses = pagination.total || 0;
-  const categories = categoriesData?.data?.categories || [];
 
   // Funzione per ordinamento locale (per campi popolati come categoria e utente)
   const sortExpensesLocally = useMemo(() => {
@@ -290,7 +254,7 @@ const ExpensesPage = () => {
     refetchExpenses();
     setFormOpen(false);
     setEditingExpense(null);
-  }, []);
+  }, [refetchExpenses]);
 
   // Menu azioni
   const handleMenuOpen = (event, expense) => {

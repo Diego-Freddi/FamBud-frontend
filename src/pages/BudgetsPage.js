@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -43,6 +43,7 @@ import {
 } from '@mui/icons-material';
 import { budgetAPI, categoryAPI } from '../services/api';
 import BudgetForm from '../components/Budgets/BudgetForm';
+import useApiCall from '../hooks/useApiCall';
 
 // Mappatura icone backend a emoji (stessa delle categorie)
 const ICON_MAP = {
@@ -74,19 +75,6 @@ const BudgetsPage = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedBudget, setSelectedBudget] = useState(null);
 
-  // Stati per categorie - gestione manuale
-  const [categoriesData, setCategoriesData] = useState(null);
-  const [categoriesLoading, setCategoriesLoading] = useState(true);
-
-  // Stati per budget - gestione manuale
-  const [budgetsData, setBudgetsData] = useState(null);
-  const [budgetsLoading, setBudgetsLoading] = useState(true);
-  const [budgetsError, setBudgetsError] = useState(null);
-
-  // Stati per riassunto - gestione manuale
-  const [summaryData, setSummaryData] = useState(null);
-  const [summaryLoading, setSummaryLoading] = useState(true);
-
   // Parametri stabilizzati
   const fetchParams = useMemo(() => ({
     month: selectedMonth,
@@ -94,66 +82,34 @@ const BudgetsPage = () => {
     familyId: undefined // Sarà gestito dal backend
   }), [selectedMonth, selectedYear]);
 
-  // Carica categorie una sola volta
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        setCategoriesLoading(true);
-        const response = await categoryAPI.getCategories();
-        setCategoriesData(response.data);
-      } catch (error) {
-        console.error('❌ Errore caricamento categorie:', error);
-      } finally {
-        setCategoriesLoading(false);
-      }
-    };
-
-    loadCategories();
+  // Funzioni API
+  const fetchCategories = useCallback(async () => {
+    return await categoryAPI.getCategories();
   }, []);
 
-  // Carica budget
-  const loadBudgets = useCallback(async () => {
-    try {
-      setBudgetsLoading(true);
-      setBudgetsError(null);
-      const response = await budgetAPI.getBudgets(fetchParams);
-      setBudgetsData(response.data);
-    } catch (error) {
-      console.error('❌ Errore caricamento budget:', error);
-      setBudgetsError(error.response?.data?.message || 'Errore nel caricamento dei budget');
-    } finally {
-      setBudgetsLoading(false);
-    }
+  const fetchBudgets = useCallback(async () => {
+    return await budgetAPI.getBudgets(fetchParams);
   }, [fetchParams]);
 
-  // Carica riassunto
-  const loadSummary = useCallback(async () => {
-    try {
-      setSummaryLoading(true);
-      const response = await budgetAPI.getBudgetSummary(fetchParams);
-      setSummaryData(response.data);
-    } catch (error) {
-      console.error('❌ Errore caricamento riassunto:', error);
-    } finally {
-      setSummaryLoading(false);
-    }
+  const fetchSummary = useCallback(async () => {
+    return await budgetAPI.getBudgetSummary(fetchParams);
   }, [fetchParams]);
 
-  // Carica dati quando cambiano i parametri
-  useEffect(() => {
-    loadBudgets();
-    loadSummary();
-  }, [loadBudgets, loadSummary]);
+  // Uso l'hook per gestire le chiamate API
+  const { data: categoriesResponse, loading: categoriesLoading, refetch: refetchCategories } = useApiCall(fetchCategories, []);
+  const { data: budgetsResponse, loading: budgetsLoading, error: budgetsError, refetch: refetchBudgets } = useApiCall(fetchBudgets, [fetchParams]);
+  const { data: summaryResponse, loading: summaryLoading, refetch: refetchSummary } = useApiCall(fetchSummary, [fetchParams]);
 
-  // Funzione refetch per uso esterno
-  const refetchBudgets = useCallback(() => {
-    loadBudgets();
-    loadSummary();
-  }, [loadBudgets, loadSummary]);
+  // Estraggo i dati dalle risposte
+  const categories = categoriesResponse?.data?.categories || [];
+  const budgets = budgetsResponse?.data?.budgets || [];
+  const summary = summaryResponse?.data?.summary || {};
 
-  const budgets = budgetsData?.data?.budgets || [];
-  const summary = summaryData?.data?.summary || {};
-  const categories = categoriesData?.data?.categories || [];
+  // Funzione refetch combinata
+  const refetchAll = useCallback(() => {
+    refetchBudgets();
+    refetchSummary();
+  }, [refetchBudgets, refetchSummary]);
 
   // Funzione per ottenere l'icona corretta
   const getCategoryIcon = (category) => {
@@ -196,7 +152,7 @@ const BudgetsPage = () => {
   const confirmDelete = async () => {
     try {
       await budgetAPI.deleteBudget(budgetToDelete._id);
-      refetchBudgets();
+      refetchAll();
       setDeleteDialogOpen(false);
       setBudgetToDelete(null);
     } catch (error) {
@@ -205,7 +161,7 @@ const BudgetsPage = () => {
   };
 
   const handleFormSuccess = useCallback(() => {
-    refetchBudgets();
+    refetchAll();
     setFormOpen(false);
     setEditingBudget(null);
   }, []);
@@ -281,7 +237,7 @@ const BudgetsPage = () => {
           </Box>
           
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <IconButton onClick={refetchBudgets} disabled={budgetsLoading}>
+            <IconButton onClick={refetchAll} disabled={budgetsLoading}>
               <RefreshOutlined />
             </IconButton>
             {!isMobile && (

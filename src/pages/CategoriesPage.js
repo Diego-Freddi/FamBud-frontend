@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -32,24 +32,29 @@ import {
   PaletteOutlined,
   BarChartOutlined,
   DragIndicatorOutlined,
+  TrendingUpOutlined,
+  TrendingDownOutlined,
+  InfoOutlined,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { categoryAPI } from '../services/api';
 import CategoryForm from '../components/Categories/CategoryForm';
 import { categoryColors } from '../styles/theme';
+import useApiCall from '../hooks/useApiCall';
 
-// Mappatura icone backend a emoji
+// Mapping icone per compatibilità
 const ICON_MAP = {
-  'shopping-cart': '🛒',
-  'car': '🚗',
+  'food': '🍽️',
+  'transport': '🚗',
+  'entertainment': '🎬',
+  'health': '🏥',
+  'shopping': '🛒',
+  'bills': '💡',
+  'education': '📚',
+  'travel': '✈️',
   'home': '🏠',
-  'heart': '💊',
-  'film': '🎬',
-  'shirt': '👕',
-  'book': '📚',
-  'more-horizontal': '⚫',
-  // Aggiungi altre mappature se necessario
+  'other': '📦'
 };
 
 const CategoriesPage = () => {
@@ -68,57 +73,28 @@ const CategoriesPage = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
 
-  // Stati per categorie - gestione manuale
-  const [categoriesData, setCategoriesData] = useState(null);
-  const [categoriesLoading, setCategoriesLoading] = useState(true);
-  const [categoriesError, setCategoriesError] = useState(null);
-
-  // Stati per statistiche - gestione manuale
-  const [statsData, setStatsData] = useState(null);
-  const [statsLoading, setStatsLoading] = useState(true);
-
-  // Carica categorie
-  const loadCategories = useCallback(async () => {
-    try {
-      setCategoriesLoading(true);
-      setCategoriesError(null);
-      const response = await categoryAPI.getCategories();
-      setCategoriesData(response.data);
-    } catch (error) {
-      console.error('❌ Errore caricamento categorie:', error);
-      setCategoriesError(error.response?.data?.message || 'Errore nel caricamento delle categorie');
-    } finally {
-      setCategoriesLoading(false);
-    }
+  // Funzioni API
+  const fetchCategories = useCallback(async () => {
+    return await categoryAPI.getCategories();
   }, []);
 
-  // Carica statistiche
-  const loadStats = useCallback(async () => {
-    try {
-      setStatsLoading(true);
-      const response = await categoryAPI.getCategoryStats();
-      setStatsData(response.data);
-    } catch (error) {
-      console.error('❌ Errore caricamento statistiche:', error);
-    } finally {
-      setStatsLoading(false);
-    }
+  const fetchStats = useCallback(async () => {
+    return await categoryAPI.getCategoryStats();
   }, []);
 
-  // Carica dati iniziali
-  useEffect(() => {
-    loadCategories();
-    loadStats();
-  }, [loadCategories, loadStats]);
+  // Uso l'hook per gestire le chiamate API
+  const { data: categoriesResponse, loading: categoriesLoading, error: categoriesError, refetch: refetchCategories } = useApiCall(fetchCategories, []);
+  const { data: statsResponse, loading: statsLoading, refetch: refetchStats } = useApiCall(fetchStats, []);
 
-  // Funzione refetch per uso esterno
-  const refetchCategories = useCallback(() => {
-    loadCategories();
-    loadStats();
-  }, [loadCategories, loadStats]);
+  // Estraggo i dati dalle risposte
+  const categories = categoriesResponse?.data?.categories || [];
+  const stats = statsResponse?.data?.stats || {};
 
-  const categories = categoriesData?.data?.categories || [];
-  const stats = statsData?.data?.stats || {};
+  // Funzione refetch combinata
+  const refetchAll = useCallback(() => {
+    refetchCategories();
+    refetchStats();
+  }, [refetchCategories, refetchStats]);
 
   // Funzione per ottenere l'icona corretta
   const getCategoryIcon = (category) => {
@@ -167,7 +143,7 @@ const CategoriesPage = () => {
   const confirmDelete = async () => {
     try {
       await categoryAPI.deleteCategory(categoryToDelete._id);
-      refetchCategories();
+      refetchAll();
       setDeleteDialogOpen(false);
       setCategoryToDelete(null);
     } catch (error) {
@@ -176,7 +152,7 @@ const CategoriesPage = () => {
   };
 
   const handleFormSuccess = useCallback(() => {
-    refetchCategories();
+    refetchAll();
     setFormOpen(false);
     setEditingCategory(null);
   }, []);
@@ -226,7 +202,7 @@ const CategoriesPage = () => {
           </Box>
           
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <IconButton onClick={refetchCategories} disabled={categoriesLoading}>
+            <IconButton onClick={refetchAll} disabled={categoriesLoading}>
               <RefreshOutlined />
             </IconButton>
             {!isMobile && (

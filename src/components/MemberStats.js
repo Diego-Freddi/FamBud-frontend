@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -8,62 +8,52 @@ import {
   LinearProgress
 } from '@mui/material';
 import { expenseAPI, incomeAPI } from '../services/api';
+import useApiCall from '../hooks/useApiCall';
 
 const MemberStats = ({ memberId, memberName }) => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [stats, setStats] = useState({
-    expenses: { totalAmount: 0, count: 0 },
-    incomes: { totalAmount: 0, count: 0 },
-    balance: 0
-  });
+  // Funzione API per statistiche membro
+  const fetchMemberStats = useCallback(async () => {
+    const currentDate = new Date();
+    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
 
-  useEffect(() => {
-    fetchMemberStats();
-  }, [memberId]);
+    // Chiamate parallele per spese e entrate del membro
+    const [expensesResponse, incomesResponse] = await Promise.all([
+      expenseAPI.getExpenses({
+        userId: memberId,
+        startDate: startOfMonth.toISOString(),
+        endDate: endOfMonth.toISOString(),
+        limit: 1000 // Per avere tutte le transazioni del mese
+      }),
+      incomeAPI.getIncomes({
+        userId: memberId,
+        startDate: startOfMonth.toISOString(),
+        endDate: endOfMonth.toISOString(),
+        limit: 1000
+      })
+    ]);
 
-  const fetchMemberStats = async () => {
-    try {
-      setLoading(true);
-      setError('');
+    const expenseStats = expensesResponse.data.data.stats || { totalAmount: 0, count: 0 };
+    const incomeStats = incomesResponse.data.data.stats || { totalAmount: 0, count: 0 };
+    const balance = incomeStats.totalAmount - expenseStats.totalAmount;
 
-      const currentDate = new Date();
-      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-
-      // Chiamate parallele per spese e entrate del membro
-      const [expensesResponse, incomesResponse] = await Promise.all([
-        expenseAPI.getExpenses({
-          userId: memberId,
-          startDate: startOfMonth.toISOString(),
-          endDate: endOfMonth.toISOString(),
-          limit: 1000 // Per avere tutte le transazioni del mese
-        }),
-        incomeAPI.getIncomes({
-          userId: memberId,
-          startDate: startOfMonth.toISOString(),
-          endDate: endOfMonth.toISOString(),
-          limit: 1000
-        })
-      ]);
-
-      const expenseStats = expensesResponse.data.data.stats || { totalAmount: 0, count: 0 };
-      const incomeStats = incomesResponse.data.data.stats || { totalAmount: 0, count: 0 };
-
-      const balance = incomeStats.totalAmount - expenseStats.totalAmount;
-
-      setStats({
+    return {
+      data: {
         expenses: expenseStats,
         incomes: incomeStats,
         balance
-      });
+      }
+    };
+  }, [memberId]);
 
-    } catch (err) {
-      console.error('Error fetching member stats:', err);
-      setError('Errore nel caricamento statistiche');
-    } finally {
-      setLoading(false);
-    }
+  // Uso l'hook per gestire la chiamata API
+  const { data: statsResponse, loading, error } = useApiCall(fetchMemberStats, [memberId]);
+
+  // Estraggo i dati dalla risposta (mantenendo la stessa struttura)
+  const stats = statsResponse?.expenses ? statsResponse : {
+    expenses: { totalAmount: 0, count: 0 },
+    incomes: { totalAmount: 0, count: 0 },
+    balance: 0
   };
 
   const formatCurrency = (amount) => {
