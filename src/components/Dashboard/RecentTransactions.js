@@ -110,92 +110,99 @@ const RecentTransactions = ({ data, loading = false, title = "Ultime Transazioni
   }
 
   return (
-    <Card sx={{ height: '100%' }}>
-      <CardHeader 
-        title={title}
-        action={
-          <IconButton size="small">
-            <MoreVertOutlined />
-          </IconButton>
-        }
-      />
-      <CardContent sx={{ pt: 0 }}>
-        <List disablePadding>
-          {transactions.map((transaction, index) => (
-            <ListItem
-              key={transaction.id}
-              sx={{
-                px: 0,
-                borderBottom: index < transactions.length - 1 ? '1px solid' : 'none',
-                borderColor: 'divider',
-              }}
-            >
-              <ListItemAvatar>
-                <Avatar
-                  sx={{
-                    bgcolor: getTransactionColor(transaction.type, transaction.category),
-                    width: 40,
-                    height: 40,
-                  }}
-                >
-                  {getTransactionIcon(transaction.type, transaction.category)}
-                </Avatar>
-              </ListItemAvatar>
-              
-              <ListItemText
-                primary={
-                  <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="body2" fontWeight="medium" component="span">
-                      {transaction.description}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      fontWeight="bold"
-                      color={transaction.type === 'income' ? 'success.main' : 'error.main'}
-                      component="span"
-                    >
-                      {formatAmount(transaction.amount, transaction.type)}
-                    </Typography>
-                  </span>
-                }
-                secondary={
-                  <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span
-                        style={{
-                          fontSize: '0.75rem',
-                          padding: '2px 8px',
-                          border: '1px solid #e0e0e0',
-                          borderRadius: '12px',
-                          backgroundColor: '#f5f5f5',
-                          color: '#666',
-                        }}
+    <Box sx={{ width: '100%', display: 'block' }}>
+      <Card sx={{ 
+        height: '100%', 
+        minHeight: '500px',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        <CardHeader 
+          title={title}
+          action={
+            <IconButton size="small">
+              <MoreVertOutlined />
+            </IconButton>
+          }
+        />
+        <CardContent sx={{ pt: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <List disablePadding>
+            {transactions.map((transaction, index) => (
+              <ListItem
+                key={transaction.id}
+                sx={{
+                  px: 0,
+                  borderBottom: index < transactions.length - 1 ? '1px solid' : 'none',
+                  borderColor: 'divider',
+                }}
+              >
+                <ListItemAvatar>
+                  <Avatar
+                    sx={{
+                      bgcolor: getTransactionColor(transaction.type, transaction.category),
+                      width: 40,
+                      height: 40,
+                    }}
+                  >
+                    {getTransactionIcon(transaction.type, transaction.category)}
+                  </Avatar>
+                </ListItemAvatar>
+                
+                <ListItemText
+                  primary={
+                    <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="body2" fontWeight="medium" component="span">
+                        {transaction.description}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        fontWeight="bold"
+                        color={transaction.type === 'income' ? 'success.main' : 'error.main'}
+                        component="span"
                       >
-                        {transaction.category}
-                      </span>
-                      <Typography variant="caption" color="text.secondary" component="span">
-                        {transaction.user}
+                        {formatAmount(transaction.amount, transaction.type)}
                       </Typography>
                     </span>
-                    <Typography variant="caption" color="text.secondary" component="span">
-                      {formatDate(transaction.date)}
-                    </Typography>
-                  </span>
-                }
-              />
-            </ListItem>
-          ))}
-        </List>
-        
-        {transactions.length === 0 && (
-          <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="body2" color="text.secondary">
-              Nessuna transazione recente
-            </Typography>
-          </Box>
-        )}
-      </CardContent>
-    </Card>
+                  }
+                  secondary={
+                    <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span
+                          style={{
+                            fontSize: '0.75rem',
+                            padding: '2px 8px',
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '12px',
+                            backgroundColor: '#f5f5f5',
+                            color: '#666',
+                          }}
+                        >
+                          {transaction.category}
+                        </span>
+                        <Typography variant="caption" color="text.secondary" component="span">
+                          {transaction.user}
+                        </Typography>
+                      </span>
+                      <Typography variant="caption" color="text.secondary" component="span">
+                        {formatDate(transaction.date)}
+                      </Typography>
+                    </span>
+                  }
+                />
+              </ListItem>
+            ))}
+          </List>
+          
+          {transactions.length === 0 && (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography variant="body2" color="text.secondary">
+                Nessuna transazione recente
+              </Typography>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+    </Box>
   );
 };
 

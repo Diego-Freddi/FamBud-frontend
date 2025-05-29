@@ -17,6 +17,7 @@ import {
   CircularProgress,
   Typography,
 } from '@mui/material';
+import useWindowResize from '../../hooks/useWindowResize';
 
 ChartJS.register(
   CategoryScale,
@@ -28,6 +29,9 @@ ChartJS.register(
 );
 
 const MonthlyTrendChart = ({ data, loading = false, title = "Andamento Mensile" }) => {
+  // Hook per gestire il ridimensionamento della finestra
+  const windowSize = useWindowResize();
+  
   // Se non ci sono dati e non stiamo caricando, mostra messaggio
   if (!loading && (!data || !data.labels || data.labels.length === 0)) {
     return (
@@ -81,6 +85,7 @@ const MonthlyTrendChart = ({ data, loading = false, title = "Andamento Mensile" 
   const options = {
     responsive: true,
     maintainAspectRatio: false,
+    resizeDelay: 0,
     plugins: {
       legend: {
         position: 'top',
@@ -135,11 +140,15 @@ const MonthlyTrendChart = ({ data, loading = false, title = "Andamento Mensile" 
   }
 
   return (
-    <Card sx={{ height: '100%' }}>
+    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <CardHeader title={title} />
-      <CardContent>
-        <Box sx={{ height: 300, position: 'relative' }}>
-          <Bar data={barData} options={options} />
+      <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ flex: 1, position: 'relative', minHeight: 300 }}>
+          <Bar 
+            key={`bar-${windowSize.width}-${windowSize.height}`}
+            data={barData} 
+            options={options} 
+          />
         </Box>
       </CardContent>
     </Card>

@@ -123,135 +123,149 @@ const DashboardPage = () => {
   }
 
   return (
-    <Box>
-      {/* Header della dashboard */}
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box>
-            <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-              Dashboard
-            </Typography>
-            <Typography variant="subtitle1" color="text.secondary">
-              Benvenuto, {user?.name}! Ecco un riepilogo delle tue finanze per {currentMonth}.
-            </Typography>
+    <Box sx={{ 
+      display: 'flex', 
+      justifyContent: 'center',
+      width: '100%'
+    }}>
+      <Box sx={{ 
+        width: '100%',
+        px: { xs: 0, sm: 2 }
+      }}>
+        {/* Header della dashboard */}
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box>
+              <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+                Dashboard
+              </Typography>
+              <Typography variant="subtitle1" color="text.secondary">
+                Benvenuto, {user?.name}! Ecco un riepilogo delle tue finanze per {currentMonth}.
+              </Typography>
+            </Box>
+            <Fab
+              size="small"
+              color="primary"
+              onClick={refetch}
+              disabled={loading}
+              sx={{ 
+                opacity: loading ? 0.5 : 1,
+                '&:hover': {
+                  transform: 'scale(1.1)',
+                }
+              }}
+              title="Aggiorna dati"
+            >
+              <RefreshOutlined />
+            </Fab>
           </Box>
-          <Fab
-            size="small"
-            color="primary"
-            onClick={refetch}
-            disabled={loading}
-            sx={{ 
-              opacity: loading ? 0.5 : 1,
-              '&:hover': {
-                transform: 'scale(1.1)',
-              }
-            }}
-            title="Aggiorna dati"
-          >
-            <RefreshOutlined />
-          </Fab>
+        </Box>
+
+        {/* Cards delle statistiche principali */}
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 3, 
+          width: '100%',
+          flexDirection: { xs: 'column', sm: 'row' },
+          flexWrap: 'wrap',
+          mb: 4
+        }}>
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
+            <StatsCard
+              title="Saldo Corrente"
+              value={dashboardData.stats?.balance || 0}
+              subtitle="Disponibile"
+              icon={<AccountBalanceWalletOutlined />}
+              color="primary"
+              loading={loading}
+            />
+          </Box>
+          
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
+            <StatsCard
+              title="Entrate Mensili"
+              value={dashboardData.stats?.monthlyIncome || 0}
+              subtitle={currentMonth}
+              icon={<TrendingUpOutlined />}
+              color="success"
+              loading={loading}
+            />
+          </Box>
+          
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
+            <StatsCard
+              title="Spese Mensili"
+              value={dashboardData.stats?.monthlyExpenses || 0}
+              subtitle={currentMonth}
+              icon={<ReceiptOutlined />}
+              color="error"
+              loading={loading}
+            />
+          </Box>
+          
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
+            <StatsCard
+              title="Risparmi"
+              value={dashboardData.stats?.savings || 0}
+              subtitle="Totale accumulato"
+              icon={<SavingsOutlined />}
+              color="info"
+              loading={loading}
+            />
+          </Box>
+        </Box>
+
+        {/* Grafici e contenuti principali */}
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 3, 
+          width: '100%',
+          flexDirection: { xs: 'column', lg: 'row' },
+          alignItems: 'stretch',
+          mb: 4
+        }}>
+          {/* Grafico spese per categoria */}
+          <Box sx={{ flex: 1, width: '100%' }}>
+            <ExpensesPieChart 
+              data={dashboardData.expensesByCategory}
+              loading={loading}
+            />
+          </Box>
+          
+          {/* Andamento mensile */}
+          <Box sx={{ flex: 1, width: '100%' }}>
+            <MonthlyTrendChart 
+              data={dashboardData.monthlyTrend}
+              loading={loading}
+            />
+          </Box>
+        </Box>
+
+        {/* Sezione inferiore */}
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 3, 
+          width: '100%',
+          flexDirection: { xs: 'column', lg: 'row' },
+          alignItems: 'stretch'
+        }}>
+          {/* Ultime transazioni */}
+          <Box sx={{ flex: 1, width: '100%' }}>
+            <RecentTransactions 
+              data={dashboardData.recentTransactions}
+              loading={loading}
+            />
+          </Box>
+          
+          {/* Avvisi budget */}
+          <Box sx={{ flex: 1, width: '100%' }}>
+            <BudgetAlerts 
+              data={dashboardData.budgetAlerts}
+              loading={loading}
+            />
+          </Box>
         </Box>
       </Box>
-
-      {/* Cards delle statistiche principali */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatsCard
-            title="Saldo Corrente"
-            value={dashboardData.stats?.balance || 0}
-            subtitle="Disponibile"
-            icon={<AccountBalanceWalletOutlined />}
-            color="primary"
-            loading={loading}
-          />
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <StatsCard
-            title="Entrate Mensili"
-            value={dashboardData.stats?.monthlyIncome || 0}
-            subtitle={currentMonth}
-            icon={<TrendingUpOutlined />}
-            color="success"
-            loading={loading}
-          />
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <StatsCard
-            title="Spese Mensili"
-            value={dashboardData.stats?.monthlyExpenses || 0}
-            subtitle={currentMonth}
-            icon={<ReceiptOutlined />}
-            color="error"
-            loading={loading}
-          />
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <StatsCard
-            title="Risparmi"
-            value={dashboardData.stats?.savings || 0}
-            subtitle="Totale accumulato"
-            icon={<SavingsOutlined />}
-            color="info"
-            loading={loading}
-          />
-        </Grid>
-      </Grid>
-
-      {/* Grafici e contenuti principali */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {/* Grafico spese per categoria */}
-        <Grid item xs={12} lg={6}>
-          <ExpensesPieChart 
-            data={dashboardData.expensesByCategory}
-            loading={loading}
-          />
-        </Grid>
-        
-        {/* Andamento mensile */}
-        <Grid item xs={12} lg={6}>
-          <MonthlyTrendChart 
-            data={dashboardData.monthlyTrend}
-            loading={loading}
-          />
-        </Grid>
-      </Grid>
-
-      {/* Sezione inferiore */}
-      <Grid container spacing={3}>
-        {/* Ultime transazioni */}
-        <Grid item xs={12} lg={8}>
-          <RecentTransactions 
-            data={dashboardData.recentTransactions}
-            loading={loading}
-          />
-        </Grid>
-        
-        {/* Avvisi budget */}
-        <Grid item xs={12} lg={4}>
-          <BudgetAlerts 
-            data={dashboardData.budgetAlerts}
-            loading={loading}
-          />
-        </Grid>
-      </Grid>
-
-      {/* Floating Action Button per aggiungere spesa */}
-      <Fab
-        color="primary"
-        aria-label="add expense"
-        sx={{
-          position: 'fixed',
-          bottom: isMobile ? 16 : 32,
-          right: isMobile ? 16 : 32,
-          zIndex: 1000,
-        }}
-        onClick={() => navigate('/expenses')}
-      >
-        <AddOutlined />
-      </Fab>
     </Box>
   );
 };

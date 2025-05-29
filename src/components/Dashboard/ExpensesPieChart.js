@@ -18,10 +18,14 @@ import {
   ListItemText,
   CircularProgress,
 } from '@mui/material';
+import useWindowResize from '../../hooks/useWindowResize';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const ExpensesPieChart = ({ data, loading = false, title = "Spese per Categoria" }) => {
+  // Hook per gestire il ridimensionamento della finestra
+  const windowSize = useWindowResize();
+  
   // Processa i dati dall'API usando i colori reali delle categorie
   const processChartData = (apiData) => {
     if (!apiData || !Array.isArray(apiData)) return [];
@@ -79,6 +83,7 @@ const ExpensesPieChart = ({ data, loading = false, title = "Spese per Categoria"
   const options = {
     responsive: true,
     maintainAspectRatio: false,
+    resizeDelay: 0,
     plugins: {
       legend: {
         display: false, // Usiamo una legenda personalizzata
@@ -119,16 +124,20 @@ const ExpensesPieChart = ({ data, loading = false, title = "Spese per Categoria"
   }
 
   return (
-    <Card sx={{ height: '100%' }}>
+    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <CardHeader 
         title={title}
         subheader={`Totale: €${total.toFixed(2)}`}
       />
-      <CardContent>
-        <Box sx={{ display: 'flex', gap: 2, height: 300 }}>
+      <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ display: 'flex', gap: 2, flex: 1, minHeight: 300 }}>
           {/* Grafico */}
           <Box sx={{ flex: 1, position: 'relative' }}>
-            <Pie data={pieData} options={options} />
+            <Pie 
+              key={`pie-${windowSize.width}-${windowSize.height}`}
+              data={pieData} 
+              options={options} 
+            />
           </Box>
           
           {/* Legenda personalizzata */}

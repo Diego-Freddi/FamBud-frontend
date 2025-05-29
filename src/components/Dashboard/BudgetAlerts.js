@@ -155,103 +155,110 @@ const BudgetAlerts = ({ data, loading = false, title = "Stato Budget" }) => {
   }
 
   return (
-    <Card sx={{ height: '100%' }}>
-      <CardHeader 
-        title={title}
-        subheader={`Budget totale: ${formatAmount(totalBudget)} (${overallPercentage}% utilizzato)`}
-      />
-      <CardContent>
-        {/* Avvisi generali */}
-        {exceededCount > 0 && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {exceededCount} categorie hanno superato il budget!
-          </Alert>
-        )}
-        
-        {warningCount > 0 && exceededCount === 0 && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            {warningCount} categorie si stanno avvicinando al limite.
-          </Alert>
-        )}
+    <Box sx={{ width: '100%', display: 'block' }}>
+      <Card sx={{ 
+        height: '100%', 
+        minHeight: '500px',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        <CardHeader 
+          title={title}
+          subheader={`Budget totale: ${formatAmount(totalBudget)} (${overallPercentage}% utilizzato)`}
+        />
+        <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          {/* Avvisi generali */}
+          {exceededCount > 0 && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {exceededCount} categorie hanno superato il budget!
+            </Alert>
+          )}
+          
+          {warningCount > 0 && exceededCount === 0 && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {warningCount} categorie si stanno avvicinando al limite.
+            </Alert>
+          )}
 
-        {exceededCount === 0 && warningCount === 0 && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            Tutti i budget sono sotto controllo! 🎉
-          </Alert>
-        )}
+          {exceededCount === 0 && warningCount === 0 && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              Tutti i budget sono sotto controllo! 🎉
+            </Alert>
+          )}
 
-        {/* Lista budget */}
-        <List disablePadding>
-          {budgets.map((budget, index) => (
-            <ListItem
-              key={budget.id}
-              sx={{
-                px: 0,
-                py: 1,
-                borderBottom: index < budgets.length - 1 ? '1px solid' : 'none',
-                borderColor: 'divider',
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 40 }}>
-                {getStatusIcon(budget.status)}
-              </ListItemIcon>
-              
-              <ListItemText
-                primary={
-                  <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <Typography variant="body2" fontWeight="medium" component="span">
-                      {budget.category}
-                    </Typography>
-                    <span
-                      style={{
-                        fontSize: '0.75rem',
-                        padding: '2px 8px',
-                        border: `1px solid ${budget.status === 'safe' ? '#4caf50' : budget.status === 'warning' ? '#ff9800' : '#f44336'}`,
-                        borderRadius: '12px',
-                        backgroundColor: budget.status === 'safe' ? '#e8f5e8' : budget.status === 'warning' ? '#fff3e0' : '#ffebee',
-                        color: budget.status === 'safe' ? '#2e7d32' : budget.status === 'warning' ? '#e65100' : '#c62828',
-                      }}
-                    >
-                      {getStatusText(budget.status, budget.percentage)}
-                    </span>
-                  </span>
-                }
-                secondary={
-                  <span>
-                    <span style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <Typography variant="caption" color="text.secondary" component="span">
-                        {formatAmount(budget.spentAmount)} di {formatAmount(budget.budgetAmount)}
+          {/* Lista budget */}
+          <List disablePadding>
+            {budgets.map((budget, index) => (
+              <ListItem
+                key={budget.id}
+                sx={{
+                  px: 0,
+                  py: 1,
+                  borderBottom: index < budgets.length - 1 ? '1px solid' : 'none',
+                  borderColor: 'divider',
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}>
+                  {getStatusIcon(budget.status)}
+                </ListItemIcon>
+                
+                <ListItemText
+                  primary={
+                    <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <Typography variant="body2" fontWeight="medium" component="span">
+                        {budget.category}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary" component="span">
-                        Rimanenti: {formatAmount(budget.budgetAmount - budget.spentAmount)}
-                      </Typography>
+                      <span
+                        style={{
+                          fontSize: '0.75rem',
+                          padding: '2px 8px',
+                          border: `1px solid ${budget.status === 'safe' ? '#4caf50' : budget.status === 'warning' ? '#ff9800' : '#f44336'}`,
+                          borderRadius: '12px',
+                          backgroundColor: budget.status === 'safe' ? '#e8f5e8' : budget.status === 'warning' ? '#fff3e0' : '#ffebee',
+                          color: budget.status === 'safe' ? '#2e7d32' : budget.status === 'warning' ? '#e65100' : '#c62828',
+                        }}
+                      >
+                        {getStatusText(budget.status, budget.percentage)}
+                      </span>
                     </span>
-                    <LinearProgress
-                      variant="determinate"
-                      value={Math.min(budget.percentage, 100)}
-                      color={getProgressColor(budget.status)}
-                      sx={{
-                        height: 6,
-                        borderRadius: 3,
-                        backgroundColor: 'grey.200',
-                      }}
-                    />
-                  </span>
-                }
-              />
-            </ListItem>
-          ))}
-        </List>
-        
-        {budgets.length === 0 && (
-          <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="body2" color="text.secondary">
-              Nessun budget configurato
-            </Typography>
-          </Box>
-        )}
-      </CardContent>
-    </Card>
+                  }
+                  secondary={
+                    <span>
+                      <span style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <Typography variant="caption" color="text.secondary" component="span">
+                          {formatAmount(budget.spentAmount)} di {formatAmount(budget.budgetAmount)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" component="span">
+                          Rimanenti: {formatAmount(budget.budgetAmount - budget.spentAmount)}
+                        </Typography>
+                      </span>
+                      <LinearProgress
+                        variant="determinate"
+                        value={Math.min(budget.percentage, 100)}
+                        color={getProgressColor(budget.status)}
+                        sx={{
+                          height: 6,
+                          borderRadius: 3,
+                          backgroundColor: 'grey.200',
+                        }}
+                      />
+                    </span>
+                  }
+                />
+              </ListItem>
+            ))}
+          </List>
+          
+          {budgets.length === 0 && (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography variant="body2" color="text.secondary">
+                Nessun budget configurato
+              </Typography>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+    </Box>
   );
 };
 
