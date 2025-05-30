@@ -527,7 +527,7 @@ const FamilyPage = () => {
                   <Box sx={{ 
                     borderTop: '1px solid', 
                     borderColor: 'divider',
-                    bgcolor: 'grey.50',
+                    bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.50',
                     p: 2
                   }}>
                     <Typography variant="subtitle2" gutterBottom sx={{ 
@@ -587,7 +587,7 @@ const FamilyPage = () => {
                           alignItems: 'center', 
                           gap: 2,
                           p: 2,
-                          bgcolor: 'grey.50',
+                          bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.50',
                           borderRadius: 1
                         }}
                       >
@@ -821,7 +821,7 @@ const FamilyPage = () => {
           )}
           
           {familyData?.banner && (
-            <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+            <Box sx={{ mt: 2, p: 2, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.50', borderRadius: 1 }}>
               <Typography variant="body2" gutterBottom>
                 Banner attuale:
               </Typography>

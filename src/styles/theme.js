@@ -273,6 +273,4 @@ export const useResponsive = (theme) => ({
   isMobile: theme.breakpoints.down('sm'),
   isTablet: theme.breakpoints.between('sm', 'md'),
   isDesktop: theme.breakpoints.up('lg'),
-});
-
-export default lightTheme; 
+}); 
