@@ -42,6 +42,7 @@ import { categoryAPI } from '../services/api';
 import CategoryForm from '../components/Categories/CategoryForm';
 import { categoryColors } from '../styles/theme';
 import useApiCall from '../hooks/useApiCall';
+import useWindowResize from '../hooks/useWindowResize';
 
 // Mapping icone per compatibilità
 const ICON_MAP = {
@@ -58,6 +59,9 @@ const ICON_MAP = {
 };
 
 const CategoriesPage = () => {
+  // Hook per gestire il ridimensionamento della finestra
+  const windowSize = useWindowResize();
+  
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
@@ -303,16 +307,46 @@ const CategoriesPage = () => {
           </CardContent>
         </Card>
       ) : (
-        <Grid container spacing={2}>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 3, 
+          width: '100%',
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          justifyContent: { xs: 'center', sm: 'flex-start' }  // Centra su mobile, allinea a sinistra su desktop
+        }}
+        key={`categories-${windowSize.width}`}
+        >
           {categories.map((category) => {
             const usage = getCategoryUsage(category._id);
             const usageColor = getUsageColor(usage.percentage);
             
             return (
-              <Grid item xs={12} sm={6} md={4} key={category._id}>
+              <Box 
+                key={category._id}
+                sx={{ 
+                  flex: { 
+                    xs: '1 1 100%',           // 1 per fila su mobile
+                    sm: '1 1 calc(50% - 12px)',  // 2 per fila su tablet
+                    md: '1 1 calc(33.333% - 16px)', // 3 per fila su desktop piccolo
+                    lg: '1 1 calc(25% - 18px)'   // 4 per fila su desktop grande
+                  },
+                  minWidth: 0,  // Previene overflow
+                  maxWidth: { 
+                    xs: '100%',     // Su mobile può occupare tutto
+                    sm: '400px',    // Su tablet e desktop max 400px
+                    md: '350px',    // Su desktop un po' più piccole
+                    lg: '320px'     // Su desktop grande ancora più compatte
+                  }
+                }}
+              >
                 <Card 
                   sx={{ 
                     height: '100%',
+                    minHeight: '200px',  // Altezza minima uniforme
+                    maxHeight: '280px',  // Altezza massima per evitare card troppo alte
+                    display: 'flex',
+                    flexDirection: 'column',
                     transition: 'all 0.2s',
                     '&:hover': {
                       transform: 'translateY(-2px)',
@@ -320,10 +354,10 @@ const CategoriesPage = () => {
                     }
                   }}
                 >
-                  <CardContent>
+                  <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                     {/* Header categoria */}
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, minHeight: '80px' }}>
                         <Avatar
                           sx={{
                             bgcolor: category.color,
@@ -365,7 +399,7 @@ const CategoriesPage = () => {
                     </Box>
 
                     {/* Statistiche utilizzo */}
-                    <Box sx={{ mb: 2 }}>
+                    <Box sx={{ mb: 2, flex: 1 }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                         <Typography variant="body2" color="text.secondary">
                           Utilizzo del mese
@@ -383,34 +417,34 @@ const CategoriesPage = () => {
                     </Box>
 
                     {/* Dettagli spese */}
-                    <Grid container spacing={2}>
-                      <Grid item xs={6}>
-                        <Box sx={{ textAlign: 'center' }}>
-                          <Typography variant="h6" color="error.main" fontWeight="bold">
-                            {formatAmount(usage.totalAmount)}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Speso
-                          </Typography>
-                        </Box>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Box sx={{ textAlign: 'center' }}>
-                          <Typography variant="h6" color="info.main" fontWeight="bold">
-                            {usage.count}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Transazioni
-                          </Typography>
-                        </Box>
-                      </Grid>
-                    </Grid>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      gap: 2, 
+                      mt: 'auto'  // Spinge questa sezione in basso
+                    }}>
+                      <Box sx={{ flex: 1, textAlign: 'center' }}>
+                        <Typography variant="h6" color="error.main" fontWeight="bold">
+                          {formatAmount(usage.totalAmount)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Speso
+                        </Typography>
+                      </Box>
+                      <Box sx={{ flex: 1, textAlign: 'center' }}>
+                        <Typography variant="h6" color="info.main" fontWeight="bold">
+                          {usage.count}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Transazioni
+                        </Typography>
+                      </Box>
+                    </Box>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
             );
           })}
-        </Grid>
+        </Box>
       )}
 
       {/* FAB per mobile */}

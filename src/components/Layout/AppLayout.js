@@ -110,7 +110,7 @@ const AppLayout = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
           <FamilyRestroomOutlined sx={{ fontSize: 32, color: 'primary.main', mr: 1 }} />
           <Typography variant="h6" fontWeight="bold">
-            FamilyBudget
+            Family Finance
           </Typography>
         </Box>
         {user?.familyId && (
@@ -181,6 +181,7 @@ const AppLayout = () => {
         sx={{
           width: { md: `calc(100% - ${drawerWidth}px)` },
           ml: { md: `${drawerWidth}px` },
+          borderRadius: '1px',
         }}
       >
         <Toolbar>
@@ -195,7 +196,7 @@ const AppLayout = () => {
           </IconButton>
 
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            {menuItems.find(item => item.path === location.pathname)?.text || 'FamilyBudget'}
+            {menuItems.find(item => item.path === location.pathname)?.text || 'Family Finance'}
           </Typography>
 
           {/* Menu utente */}
