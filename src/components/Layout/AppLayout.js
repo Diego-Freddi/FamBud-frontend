@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -33,6 +33,7 @@ import {
   AccountCircleOutlined,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
+import { familyAPI } from '../../services/api';
 
 const drawerWidth = 280;
 
@@ -81,6 +82,26 @@ const AppLayout = () => {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [familyName, setFamilyName] = useState('Family Finance');
+
+  // Carica il nome della famiglia
+  useEffect(() => {
+    const fetchFamilyName = async () => {
+      try {
+        if (user?.familyId) {
+          const response = await familyAPI.getFamily();
+          if (response.data.success) {
+            setFamilyName(response.data.data.family.name || 'Family Finance');
+          }
+        }
+      } catch (error) {
+        console.error('Errore nel caricamento nome famiglia:', error);
+        setFamilyName('Family Finance');
+      }
+    };
+
+    fetchFamilyName();
+  }, [user?.familyId]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -199,7 +220,7 @@ const AppLayout = () => {
           </IconButton>
 
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            {menuItems.find(item => item.path === location.pathname)?.text || 'Family Finance'}
+            {`Famiglia: ${familyName}`}
           </Typography>
 
           {/* Menu utente */}

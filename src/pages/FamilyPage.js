@@ -331,7 +331,9 @@ const FamilyPage = () => {
         sx={{ 
           background: familyData?.banner 
             ? `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${familyData.banner})`
-            : 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+            : (theme) => theme.palette.mode === 'dark' 
+              ? 'linear-gradient(135deg, #424242 0%, #616161 100%)'
+              : 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           borderRadius: 2,
