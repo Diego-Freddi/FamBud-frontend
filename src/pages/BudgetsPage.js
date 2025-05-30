@@ -45,16 +45,28 @@ import { budgetAPI, categoryAPI } from '../services/api';
 import BudgetForm from '../components/Budgets/BudgetForm';
 import useApiCall from '../hooks/useApiCall';
 
-// Mappatura icone backend a emoji (stessa delle categorie)
+// Mapping icone per compatibilità
 const ICON_MAP = {
+  // Icone originali
+  'food': '🍽️',
+  'transport': '🚗',
+  'entertainment': '🎬',
+  'health': '🏥',
+  'shopping': '🛒',
+  'bills': '💡',
+  'education': '📚',
+  'travel': '✈️',
+  'home': '🏠',
+  'other': '📦',
+  
+  // Icone effettivamente nel database
   'shopping-cart': '🛒',
   'car': '🚗',
-  'home': '🏠',
-  'heart': '💊',
+  'heart': '❤️',
   'film': '🎬',
   'shirt': '👕',
   'book': '📚',
-  'more-horizontal': '⚫',
+  'more-horizontal': '📦'
 };
 
 const BudgetsPage = () => {
@@ -399,6 +411,8 @@ const BudgetsPage = () => {
                 <Card 
                   sx={{ 
                     height: '100%',
+                    minWidth: '350px',
+                    maxWidth: '400px',
                     transition: 'all 0.2s',
                     '&:hover': {
                       transform: 'translateY(-2px)',

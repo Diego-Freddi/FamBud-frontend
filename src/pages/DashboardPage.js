@@ -55,8 +55,8 @@ const DashboardPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     userId: 'all', // 'all' per tutti i membri
-    startDate: null, // null per dall'inizio
-    endDate: null, // null per fino ad oggi
+    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1), // Primo giorno del mese corrente
+    endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0), // Ultimo giorno del mese corrente
   });
 
   // Parametri API stabilizzati per evitare loop infiniti
@@ -109,13 +109,21 @@ const DashboardPage = () => {
   const clearFilters = () => {
     setFilters({
       userId: 'all',
-      startDate: null,
-      endDate: null,
+      startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+      endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
     });
   };
 
   const hasActiveFilters = useMemo(() => {
-    return filters.userId !== 'all' || filters.startDate || filters.endDate;
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    const isCurrentMonth = filters.startDate && filters.endDate &&
+      filters.startDate.getTime() === currentMonthStart.getTime() &&
+      filters.endDate.getTime() === currentMonthEnd.getTime();
+    
+    return filters.userId !== 'all' || !isCurrentMonth;
   }, [filters]);
 
   // Uso l'hook per gestire le chiamate API
@@ -157,27 +165,37 @@ const DashboardPage = () => {
   const getPeriodText = () => {
     const { appliedFilters } = dashboardData;
     
-    if (!appliedFilters?.isFiltered) {
-      return 'Dall\'inizio ad oggi';
+    // Controlla se siamo nel mese corrente (default)
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    const isCurrentMonth = appliedFilters?.startDate && appliedFilters?.endDate &&
+      new Date(appliedFilters.startDate).getTime() === currentMonthStart.getTime() &&
+      new Date(appliedFilters.endDate).getTime() === currentMonthEnd.getTime();
+    
+    if (isCurrentMonth || (!appliedFilters?.isFiltered && !appliedFilters?.startDate && !appliedFilters?.endDate)) {
+      const monthName = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' }).format(now);
+      return `${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`;
     }
     
     let periodText = '';
-    if (appliedFilters.startDate && appliedFilters.endDate) {
+    if (appliedFilters?.startDate && appliedFilters?.endDate) {
       const start = new Date(appliedFilters.startDate).toLocaleDateString('it-IT');
       const end = new Date(appliedFilters.endDate).toLocaleDateString('it-IT');
       periodText = `Dal ${start} al ${end}`;
-    } else if (appliedFilters.startDate) {
+    } else if (appliedFilters?.startDate) {
       const start = new Date(appliedFilters.startDate).toLocaleDateString('it-IT');
       periodText = `Dal ${start} ad oggi`;
-    } else if (appliedFilters.endDate) {
+    } else if (appliedFilters?.endDate) {
       const end = new Date(appliedFilters.endDate).toLocaleDateString('it-IT');
       periodText = `Dall'inizio al ${end}`;
     } else {
-      periodText = 'Dall\'inizio ad oggi';
+      periodText = 'Mese corrente';
     }
     
     // Aggiungi info utente se filtrato
-    if (appliedFilters.userId) {
+    if (appliedFilters?.userId) {
       const member = activeMembers.find(m => m.user._id === appliedFilters.userId);
       if (member) {
         periodText += ` - ${member.user.name}`;
@@ -251,7 +269,7 @@ const DashboardPage = () => {
                   Dashboard
                 </Typography>
                 <Typography variant="subtitle1" color="text.secondary">
-                  Benvenuto, {user?.name}! Ecco un riepilogo delle tue finanze per {getPeriodText()}.
+                  Benvenuto, {user?.name}! Ecco un riepilogo delle tue finanze {getPeriodText()}.
                 </Typography>
               </Box>
               

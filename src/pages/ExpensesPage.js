@@ -26,6 +26,14 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  TableSortLabel,
 } from '@mui/material';
 import {
   AddOutlined,
@@ -460,156 +468,112 @@ const ExpensesPage = () => {
           </Alert>
         )}
 
-        {/* Lista spese */}
-        {expensesLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress />
-          </Box>
-        ) : expenses.length === 0 ? (
-          <Card>
-            <CardContent sx={{ textAlign: 'center', py: 6 }}>
-              <ReceiptOutlined sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                Nessuna spesa trovata
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                {Object.values(filters).some(v => v) 
-                  ? 'Prova a modificare i filtri di ricerca'
-                  : 'Inizia aggiungendo la tua prima spesa'
-                }
-              </Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddOutlined />}
-                onClick={handleAddExpense}
-              >
-                Aggiungi Prima Spesa
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            {/* Header tabella */}
-            <Card sx={{ mb: 2 }}>
-              <CardContent sx={{ py: 1 }}>
-                <Grid container alignItems="center" spacing={1}>
-                  <Grid item xs={3} md={2}>
-                    <Button
-                      size="small"
-                      onClick={() => handleSort('date')}
-                      startIcon={
-                        sortBy === 'date' ? (
-                          sortOrder === 'desc' ? <ArrowDownwardOutlined /> : <ArrowUpwardOutlined />
-                        ) : (
-                          <SortOutlined />
-                        )
-                      }
-                      variant={sortBy === 'date' ? 'contained' : 'text'}
-                      color={sortBy === 'date' ? 'primary' : 'inherit'}
+        {/* Tabella spese */}
+        <TableContainer component={Paper} sx={{ mt: 2 }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>
+                  <TableSortLabel
+                    active={sortBy === 'date'}
+                    direction={sortBy === 'date' ? sortOrder : 'desc'}
+                    onClick={() => handleSort('date')}
+                  >
+                    Data
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={sortBy === 'description'}
+                    direction={sortBy === 'description' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('description')}
+                  >
+                    Descrizione
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={sortBy === 'amount'}
+                    direction={sortBy === 'amount' ? sortOrder : 'desc'}
+                    onClick={() => handleSort('amount')}
+                  >
+                    Importo
+                  </TableSortLabel>
+                </TableCell>
+                {!isMobile && (
+                  <TableCell>
+                    <TableSortLabel
+                      active={sortBy === 'category'}
+                      direction={sortBy === 'category' ? sortOrder : 'asc'}
+                      onClick={() => handleSort('category')}
                     >
-                      Data
-                    </Button>
-                  </Grid>
-                  <Grid item xs={6} md={4}>
-                    <Button
-                      size="small"
-                      onClick={() => handleSort('description')}
-                      startIcon={
-                        sortBy === 'description' ? (
-                          sortOrder === 'desc' ? <ArrowDownwardOutlined /> : <ArrowUpwardOutlined />
-                        ) : (
-                          <SortOutlined />
-                        )
-                      }
-                      variant={sortBy === 'description' ? 'contained' : 'text'}
-                      color={sortBy === 'description' ? 'primary' : 'inherit'}
+                      Categoria
+                    </TableSortLabel>
+                  </TableCell>
+                )}
+                {!isMobile && (
+                  <TableCell>
+                    <TableSortLabel
+                      active={sortBy === 'user'}
+                      direction={sortBy === 'user' ? sortOrder : 'asc'}
+                      onClick={() => handleSort('user')}
                     >
-                      Descrizione
-                    </Button>
-                  </Grid>
-                  <Grid item xs={3} md={2}>
-                    <Button
-                      size="small"
-                      onClick={() => handleSort('amount')}
-                      startIcon={
-                        sortBy === 'amount' ? (
-                          sortOrder === 'desc' ? <ArrowDownwardOutlined /> : <ArrowUpwardOutlined />
-                        ) : (
-                          <SortOutlined />
-                        )
+                      Utente
+                    </TableSortLabel>
+                  </TableCell>
+                )}
+                <TableCell>Azioni</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {expensesLoading ? (
+                <TableRow>
+                  <TableCell colSpan={isMobile ? 4 : 6} sx={{ py: 4, textAlign: 'center' }}>
+                    <CircularProgress />
+                  </TableCell>
+                </TableRow>
+              ) : filteredExpenses.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={isMobile ? 4 : 6} sx={{ py: 4, textAlign: 'center' }}>
+                    <ReceiptOutlined sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                    <Typography variant="h6" color="text.secondary" gutterBottom>
+                      Nessuna spesa trovata
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {filters.search || filters.category !== 'all' || filters.minAmount || filters.maxAmount
+                        ? 'Prova a modificare i filtri di ricerca'
+                        : 'Inizia aggiungendo la tua prima spesa'
                       }
-                      variant={sortBy === 'amount' ? 'contained' : 'text'}
-                      color={sortBy === 'amount' ? 'primary' : 'inherit'}
-                    >
-                      Importo
-                    </Button>
-                  </Grid>
-                  {!isMobile && (
-                    <>
-                      <Grid item md={2}>
-                        <Button
-                          size="small"
-                          onClick={() => handleSort('category')}
-                          startIcon={
-                            sortBy === 'category' ? (
-                              sortOrder === 'desc' ? <ArrowDownwardOutlined /> : <ArrowUpwardOutlined />
-                            ) : (
-                              <SortOutlined />
-                            )
-                          }
-                          variant={sortBy === 'category' ? 'contained' : 'text'}
-                          color={sortBy === 'category' ? 'primary' : 'inherit'}
-                        >
-                          Categoria
-                        </Button>
-                      </Grid>
-                      <Grid item md={1}>
-                        <Button
-                          size="small"
-                          onClick={() => handleSort('user')}
-                          startIcon={
-                            sortBy === 'user' ? (
-                              sortOrder === 'desc' ? <ArrowDownwardOutlined /> : <ArrowUpwardOutlined />
-                            ) : (
-                              <SortOutlined />
-                            )
-                          }
-                          variant={sortBy === 'user' ? 'contained' : 'text'}
-                          color={sortBy === 'user' ? 'primary' : 'inherit'}
-                        >
-                          Utente
-                        </Button>
-                      </Grid>
-                    </>
-                  )}
-                  <Grid item xs={12} md={1} />
-                </Grid>
-              </CardContent>
-            </Card>
-
-            {/* Lista spese */}
-            {filteredExpenses.map((expense) => {
-              const categoryInfo = getCategoryInfo(expense);
-              
-              return (
-                <Card key={expense._id} sx={{ mb: 1 }}>
-                  <CardContent sx={{ py: 2 }}>
-                    <Grid container alignItems="center" spacing={1}>
-                      <Grid item xs={3} md={2}>
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredExpenses.map((expense) => {
+                  const categoryInfo = getCategoryInfo(expense);
+                  
+                  return (
+                    <TableRow key={expense._id} hover>
+                      <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <CalendarTodayOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
                           <Typography variant="body2">
                             {formatDate(expense.date)}
                           </Typography>
                         </Box>
-                      </Grid>
+                      </TableCell>
                       
-                      <Grid item xs={6} md={4}>
+                      <TableCell>
                         <Typography variant="body1" fontWeight="medium">
                           {expense.description}
                         </Typography>
+                        {expense.notes && (
+                          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                            {expense.notes}
+                          </Typography>
+                        )}
+                        {/* Su mobile, mostra categoria sotto la descrizione */}
                         {isMobile && (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                          <Box sx={{ mt: 1 }}>
                             <Chip
                               label={categoryInfo.name}
                               size="small"
@@ -621,74 +585,75 @@ const ExpensesPage = () => {
                             />
                           </Box>
                         )}
-                      </Grid>
+                      </TableCell>
                       
-                      <Grid item xs={3} md={2}>
+                      <TableCell>
                         <Typography variant="body1" fontWeight="bold" color="error.main">
                           {formatAmount(expense.amount)}
                         </Typography>
-                      </Grid>
+                      </TableCell>
                       
+                      {/* Categoria - nascosta su mobile */}
                       {!isMobile && (
-                        <>
-                          <Grid item md={2}>
-                            <Chip
-                              label={categoryInfo.name}
-                              size="small"
-                              sx={{
-                                backgroundColor: categoryInfo.color,
-                                color: 'white',
-                              }}
-                            />
-                          </Grid>
-                          <Grid item md={1}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <PersonOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
-                              <Typography variant="body2" color="text.secondary">
-                                {expense.userId?.name || 'Tu'}
-                              </Typography>
-                            </Box>
-                          </Grid>
-                        </>
+                        <TableCell>
+                          <Chip
+                            label={categoryInfo.name}
+                            size="small"
+                            sx={{
+                              backgroundColor: categoryInfo.color,
+                              color: 'white',
+                            }}
+                          />
+                        </TableCell>
                       )}
                       
-                      <Grid item xs={12} md={1}>
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                          <IconButton
-                            size="small"
-                            onClick={(e) => handleMenuOpen(e, expense)}
-                          >
-                            <MoreVertOutlined />
-                          </IconButton>
-                        </Box>
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                      {/* Utente - nascosto su mobile */}
+                      {!isMobile && (
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <PersonOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
+                            <Typography variant="body2">
+                              {expense.userId?.name || 'Tu'}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                      )}
+                      
+                      <TableCell>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleMenuOpen(e, expense)}
+                        >
+                          <MoreVertOutlined />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
 
-            {/* Paginazione */}
-            {totalPages > 1 && (!filters.search || filters.search.length < 3) && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-                <Pagination
-                  count={totalPages}
-                  page={page}
-                  onChange={(e, newPage) => setPage(newPage)}
-                  color="primary"
-                />
-              </Box>
-            )}
+        {/* Paginazione */}
+        {totalPages > 1 && (!filters.search || filters.search.length < 3) && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={(e, newPage) => setPage(newPage)}
+              color="primary"
+            />
+          </Box>
+        )}
 
-            {/* Messaggio quando si usa ricerca frontend */}
-            {filters.search && filters.search.length >= 3 && (
-              <Box sx={{ textAlign: 'center', mt: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Mostrando {filteredExpenses.length} risultati per "{filters.search}"
-                </Typography>
-              </Box>
-            )}
-          </>
+        {/* Messaggio quando si usa ricerca frontend */}
+        {filters.search && filters.search.length >= 3 && (
+          <Box sx={{ textAlign: 'center', mt: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              Mostrando {filteredExpenses.length} risultati per "{filters.search}"
+            </Typography>
+          </Box>
         )}
 
         {/* FAB per mobile */}

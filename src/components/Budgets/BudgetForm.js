@@ -37,16 +37,28 @@ import {
 import { budgetSchema } from '../../utils/validationSchemas';
 import { budgetAPI } from '../../services/api';
 
-// Mappatura icone backend a emoji (stessa delle categorie)
+// Mapping icone per compatibilità
 const ICON_MAP = {
+  // Icone originali
+  'food': '🍽️',
+  'transport': '🚗',
+  'entertainment': '🎬',
+  'health': '🏥',
+  'shopping': '🛒',
+  'bills': '💡',
+  'education': '📚',
+  'travel': '✈️',
+  'home': '🏠',
+  'other': '📦',
+  
+  // Icone effettivamente nel database
   'shopping-cart': '🛒',
   'car': '🚗',
-  'home': '🏠',
-  'heart': '💊',
+  'heart': '❤️',
   'film': '🎬',
   'shirt': '👕',
   'book': '📚',
-  'more-horizontal': '⚫',
+  'more-horizontal': '📦'
 };
 
 const BudgetForm = ({ 

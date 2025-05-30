@@ -49,16 +49,28 @@ const PRESET_ICONS = [
   '🔧', '🌟', '📱', '🎮', '🏃', '🍎', '🏥', '🎨', '📖', '🎪'
 ];
 
-// Mappatura icone backend a emoji (stessa del CategoriesPage)
+// Mapping icone per compatibilità
 const ICON_MAP = {
+  // Icone originali
+  'food': '🍽️',
+  'transport': '🚗',
+  'entertainment': '🎬',
+  'health': '🏥',
+  'shopping': '🛒',
+  'bills': '💡',
+  'education': '📚',
+  'travel': '✈️',
+  'home': '🏠',
+  'other': '📦',
+  
+  // Icone effettivamente nel database
   'shopping-cart': '🛒',
   'car': '🚗',
-  'home': '🏠',
-  'heart': '💊',
+  'heart': '❤️',
   'film': '🎬',
   'shirt': '👕',
   'book': '📚',
-  'more-horizontal': '⚫',
+  'more-horizontal': '📦'
 };
 
 const CategoryForm = ({ 

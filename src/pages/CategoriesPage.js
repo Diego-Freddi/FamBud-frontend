@@ -46,6 +46,7 @@ import useWindowResize from '../hooks/useWindowResize';
 
 // Mapping icone per compatibilità
 const ICON_MAP = {
+  // Icone originali
   'food': '🍽️',
   'transport': '🚗',
   'entertainment': '🎬',
@@ -55,7 +56,16 @@ const ICON_MAP = {
   'education': '📚',
   'travel': '✈️',
   'home': '🏠',
-  'other': '📦'
+  'other': '📦',
+  
+  // Icone effettivamente nel database
+  'shopping-cart': '🛒',
+  'car': '🚗',
+  'heart': '❤️',
+  'film': '🎬',
+  'shirt': '👕',
+  'book': '📚',
+  'more-horizontal': '📦'
 };
 
 const CategoriesPage = () => {

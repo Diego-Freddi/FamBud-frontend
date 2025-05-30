@@ -20,7 +20,7 @@ import {
 } from '@mui/icons-material';
 import { categoryColors } from '../../styles/theme';
 
-const RecentTransactions = ({ data, loading = false, title = "Ultime Transazioni" }) => {
+const RecentTransactions = ({ data, loading = false, title = "Transazioni del Mese" }) => {
   // Processa i dati dall'API
   const processTransactions = (apiData) => {
     if (!apiData || !Array.isArray(apiData)) return [];
@@ -46,10 +46,10 @@ const RecentTransactions = ({ data, loading = false, title = "Ultime Transazioni
         <CardContent>
           <Box sx={{ textAlign: 'center', py: 4 }}>
             <Typography variant="h6" color="text.secondary" gutterBottom>
-              Nessuna transazione recente
+              Nessuna transazione questo mese
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Le tue ultime spese e entrate appariranno qui
+              Le tue spese e entrate del mese appariranno qui
             </Typography>
           </Box>
         </CardContent>
@@ -126,7 +126,31 @@ const RecentTransactions = ({ data, loading = false, title = "Ultime Transazioni
           }
         />
         <CardContent sx={{ pt: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <List disablePadding>
+          <List 
+            disablePadding
+            sx={{
+              maxHeight: '400px',
+              overflowY: 'auto',
+              pr: 1,
+              '&::-webkit-scrollbar': {
+                width: '6px',
+              },
+              '&::-webkit-scrollbar-track': {
+                backgroundColor: 'transparent',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: 'transparent',
+                borderRadius: '3px',
+                transition: 'background-color 0.2s ease',
+              },
+              '&:hover::-webkit-scrollbar-thumb': {
+                backgroundColor: 'rgba(0,0,0,0.2)',
+              },
+              '&::-webkit-scrollbar-thumb:hover': {
+                backgroundColor: 'rgba(0,0,0,0.3)',
+              },
+            }}
+          >
             {transactions.map((transaction, index) => (
               <ListItem
                 key={transaction.id}
@@ -196,7 +220,7 @@ const RecentTransactions = ({ data, loading = false, title = "Ultime Transazioni
           {transactions.length === 0 && (
             <Box sx={{ textAlign: 'center', py: 4 }}>
               <Typography variant="body2" color="text.secondary">
-                Nessuna transazione recente
+                Nessuna transazione questo mese
               </Typography>
             </Box>
           )}

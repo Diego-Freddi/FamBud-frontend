@@ -115,6 +115,19 @@ export const familyAPI = {
   
   // Cancella invito
   cancelInvitation: (invitationId) => api.delete(`/family/invitations/${invitationId}`),
+  
+  // Upload banner famiglia
+  uploadFamilyBanner: (formData) => api.post('/family/upload-banner', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  }),
+  
+  // Imposta banner tramite URL
+  setFamilyBannerUrl: (bannerData) => api.put('/family/set-banner-url', bannerData),
+  
+  // Rimuovi banner famiglia
+  removeFamilyBanner: () => api.delete('/family/banner'),
 };
 
 // PROFILE SERVICES

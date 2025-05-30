@@ -30,6 +30,8 @@ import {
   Paper,
   Tab,
   Tabs,
+  Chip,
+  Collapse,
 } from '@mui/material';
 import {
   PersonAddOutlined,
@@ -41,6 +43,7 @@ import {
   GroupOutlined,
   BarChartOutlined,
   SettingsOutlined,
+  ExpandMoreOutlined,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { familyAPI } from '../services/api';
@@ -59,6 +62,11 @@ const FamilyPage = () => {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [memberMenuAnchor, setMemberMenuAnchor] = useState(null);
   const [selectedMember, setSelectedMember] = useState(null);
+  const [bannerDialogOpen, setBannerDialogOpen] = useState(false);
+  const [bannerTabValue, setBannerTabValue] = useState(0);
+  const [bannerUrl, setBannerUrl] = useState('');
+  const [bannerUploading, setBannerUploading] = useState(false);
+  const [expandedMembers, setExpandedMembers] = useState(new Set());
   
   // Stati per form
   const [inviteEmail, setInviteEmail] = useState('');
@@ -224,6 +232,77 @@ const FamilyPage = () => {
     setActiveTab(newValue);
   };
 
+  // Gestione banner famiglia
+  const handleBannerFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setBannerUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('banner', file);
+
+      const response = await familyAPI.uploadFamilyBanner(formData);
+      if (response.data.success) {
+        refetchFamilyData();
+        setBannerDialogOpen(false);
+      } else {
+        setError(response.data.message || 'Errore nell\'upload banner');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Errore nell\'upload banner');
+    } finally {
+      setBannerUploading(false);
+    }
+  };
+
+  const handleBannerUrlSubmit = async () => {
+    if (!bannerUrl.trim()) return;
+
+    setBannerUploading(true);
+    try {
+      const response = await familyAPI.setFamilyBannerUrl({ bannerUrl: bannerUrl.trim() });
+      if (response.data.success) {
+        refetchFamilyData();
+        setBannerDialogOpen(false);
+        setBannerUrl('');
+      } else {
+        setError(response.data.message || 'Errore nell\'impostazione banner');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Errore nell\'impostazione banner');
+    } finally {
+      setBannerUploading(false);
+    }
+  };
+
+  const handleRemoveBanner = async () => {
+    try {
+      const response = await familyAPI.removeFamilyBanner();
+      if (response.data.success) {
+        refetchFamilyData();
+        setBannerDialogOpen(false);
+      } else {
+        setError(response.data.message || 'Errore nella rimozione banner');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Errore nella rimozione banner');
+    }
+  };
+
+  // Gestione espansione card membri
+  const toggleMemberExpansion = (memberId) => {
+    setExpandedMembers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(memberId)) {
+        newSet.delete(memberId);
+      } else {
+        newSet.add(memberId);
+      }
+      return newSet;
+    });
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
@@ -247,291 +326,342 @@ const FamilyPage = () => {
 
   return (
     <Box>
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+      {/* Hero Header Section */}
+      <Box 
+        sx={{ 
+          background: familyData?.banner 
+            ? `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${familyData.banner})`
+            : 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          borderRadius: 2,
+          p: 4,
+          mb: 4,
+          color: 'white',
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+      >
+        <Box sx={{ position: 'relative', zIndex: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+            <Avatar 
+              sx={{ 
+                width: 64, 
+                height: 64, 
+                bgcolor: 'rgba(255,255,255,0.2)',
+                fontSize: '2rem'
+              }}
+            >
+              <GroupOutlined sx={{ fontSize: '2rem' }} />
+            </Avatar>
           <Box>
-            <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-              Gestione Famiglia
-            </Typography>
-            <Typography variant="subtitle1" color="text.secondary">
-              Gestisci i membri della tua famiglia e le loro autorizzazioni
-            </Typography>
+              <Typography variant="h3" component="h1" fontWeight="bold" gutterBottom>
+                {familyData?.name}
+              </Typography>
+              <Typography variant="h6" sx={{ opacity: 0.9 }}>
+                {familyData?.description || 'La tua famiglia digitale'}
+              </Typography>
+            </Box>
           </Box>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <IconButton onClick={refetchFamilyData} title="Aggiorna">
+          
+          {/* Stats Cards */}
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <Box 
+              sx={{ 
+                bgcolor: 'rgba(255,255,255,0.15)', 
+                borderRadius: 2, 
+                p: 2, 
+                minWidth: 120,
+                textAlign: 'center'
+              }}
+            >
+              <Typography variant="h4" fontWeight="bold">
+                {familyData?.members?.length || 0}
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                Membri
+              </Typography>
+            </Box>
+            <Box 
+              sx={{ 
+                bgcolor: 'rgba(255,255,255,0.15)', 
+                borderRadius: 2, 
+                p: 2, 
+                minWidth: 120,
+                textAlign: 'center'
+              }}
+            >
+              <Typography variant="h4" fontWeight="bold">
+                {familyData?.invitations?.filter(inv => inv.status === 'pending').length || 0}
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                Inviti Pendenti
+              </Typography>
+            </Box>
+            <Box 
+              sx={{ 
+                bgcolor: 'rgba(255,255,255,0.15)', 
+                borderRadius: 2, 
+                p: 2, 
+                minWidth: 120,
+                textAlign: 'center'
+              }}
+            >
+              <Typography variant="h4" fontWeight="bold">
+                {new Date(familyData?.createdAt).getFullYear() || new Date().getFullYear()}
+            </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                Anno Creazione
+            </Typography>
+            </Box>
+          </Box>
+        </Box>
+        
+        {/* Action Buttons */}
+        <Box sx={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 1 }}>
+          <IconButton 
+            onClick={refetchFamilyData} 
+            sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.1)' }}
+          >
               <RefreshOutlined />
             </IconButton>
             {isUserAdmin() && (
-              <Button
-                variant="contained"
-                startIcon={<PersonAddOutlined />}
-                onClick={() => setInviteDialogOpen(true)}
-              >
-                Invita Membro
-              </Button>
+            <IconButton
+              onClick={() => setBannerDialogOpen(true)}
+              sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.1)' }}
+              title="Cambia banner famiglia"
+            >
+              <EditOutlined />
+            </IconButton>
             )}
           </Box>
         </Box>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
             {error}
           </Alert>
         )}
+
+      {/* Membri Famiglia Section */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 3 }}>
+          👥 Membri della Famiglia
+        </Typography>
+        
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          {familyData?.members?.map((member) => (
+            <Box key={member.user._id} sx={{ minWidth: 280, maxWidth: 360 }}>
+              <Card 
+                sx={{ 
+                  transition: 'all 0.2s',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: 4,
+                  }
+                }}
+                onClick={() => toggleMemberExpansion(member.user._id)}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                    <Avatar 
+                      src={member.user.avatar || DEFAULT_AVATAR_URL}
+                      sx={{ 
+                        width: 56, 
+                        height: 56,
+                        border: member.role === 'admin' ? '3px solid #d32f2f' : '3px solid #1976d2'
+                      }}
+                    >
+                      {!member.user.avatar && member.user.name.charAt(0).toUpperCase()}
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                        <Typography variant="h6" fontWeight="bold">
+                          {member.user.name}
+                        </Typography>
+                        {member.user._id === user?.id && (
+                          <Chip label="Tu" size="small" color="primary" />
+                        )}
+                      </Box>
+                      <Typography variant="body2" color="text.secondary">
+                        {member.user.email}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <ExpandMoreOutlined 
+                        sx={{ 
+                          transform: expandedMembers.has(member.user._id) ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.2s'
+                        }} 
+                      />
+                      {isUserAdmin() && member.user._id !== user?.id && (
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMemberMenuOpen(e, member);
+                          }}
+                        >
+                          <MoreVertOutlined />
+                        </IconButton>
+                      )}
+                    </Box>
+                  </Box>
+                  
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Chip
+                      icon={member.role === 'admin' ? <span>👑</span> : <span>👤</span>}
+                      label={member.role === 'admin' ? 'Amministratore' : 'Membro'}
+                      color={member.role === 'admin' ? 'error' : 'default'}
+                      variant="outlined"
+                    />
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                      📊 Clicca per statistiche
+                    </Typography>
+                  </Box>
+                </CardContent>
+                
+                {/* Sezione Statistiche Espandibile */}
+                <Collapse in={expandedMembers.has(member.user._id)} timeout="auto" unmountOnExit>
+                  <Box sx={{ 
+                    borderTop: '1px solid', 
+                    borderColor: 'divider',
+                    bgcolor: 'grey.50',
+                    p: 2
+                  }}>
+                    <Typography variant="subtitle2" gutterBottom sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 1,
+                      mb: 2,
+                      fontWeight: 'bold'
+                    }}>
+                      📊 Statistiche di {member.user.name}
+                    </Typography>
+                    <MemberStats memberId={member.user._id} memberName={member.user.name} />
+                  </Box>
+                </Collapse>
+              </Card>
+            </Box>
+          ))}
+        </Box>
       </Box>
 
-      {/* Tabs */}
-      <Paper sx={{ mb: 3 }}>
-        <Tabs value={activeTab} onChange={handleTabChange} variant="fullWidth">
-          <Tab icon={<GroupOutlined />} label="Membri" />
-          <Tab icon={<EmailOutlined />} label="Inviti" />
-          <Tab icon={<BarChartOutlined />} label="Statistiche" />
-          <Tab icon={<SettingsOutlined />} label="Impostazioni" />
-        </Tabs>
-      </Paper>
-
-      {/* Contenuto tabs */}
-      {activeTab === 0 && (
-        <Grid container spacing={3}>
-          {/* Info famiglia */}
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardHeader 
-                title="Informazioni Famiglia"
-                action={
-                  isUserAdmin() && (
-                    <IconButton onClick={() => setInviteDialogOpen(true)}>
-                      <EditOutlined />
-                    </IconButton>
-                  )
-                }
-              />
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  {familyData?.name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  {familyData?.description || 'Nessuna descrizione'}
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  <span style={{
-                    backgroundColor: '#1976d2',
-                    color: 'white',
-                    padding: '4px 12px',
-                    borderRadius: '16px',
-                    fontSize: '0.75rem',
-                    fontWeight: 500
-                  }}>
-                    {familyData?.members?.length || 0} membri
-                  </span>
-                  <span style={{
-                    backgroundColor: '#ed6c02',
-                    color: 'white',
-                    padding: '4px 12px',
-                    borderRadius: '16px',
-                    fontSize: '0.75rem',
-                    fontWeight: 500
-                  }}>
-                    {familyData?.invitations?.filter(inv => inv.status === 'pending').length || 0} inviti pendenti
-                  </span>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Lista membri */}
-          <Grid item xs={12} md={8}>
-            <Card>
-              <CardHeader title="Membri Famiglia" />
-              <CardContent>
-                <List>
-                  {familyData?.members?.map((member, index) => (
-                    <React.Fragment key={member.user._id}>
-                      <ListItem>
-                        <ListItemAvatar>
-                          <Avatar src={member.user.avatar || DEFAULT_AVATAR_URL}>
-                            {!member.user.avatar && member.user.name.charAt(0).toUpperCase()}
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontSize: '1rem', fontWeight: 500 }}>
-                                {member.user.name}
-                              </span>
-                              {member.user._id === user?.id && (
-                                <span style={{
-                                  backgroundColor: '#1976d2',
-                                  color: 'white',
-                                  padding: '2px 8px',
-                                  borderRadius: '12px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: 500
-                                }}>
-                                  Tu
-                                </span>
-                              )}
-                            </span>
-                          }
-                          secondary={
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                              <span style={{ fontSize: '0.875rem', color: 'rgba(0, 0, 0, 0.6)' }}>
-                                {member.user.email}
-                              </span>
-                              <span style={{
-                                backgroundColor: member.role === 'admin' ? '#d32f2f' : '#e0e0e0',
-                                color: member.role === 'admin' ? 'white' : 'rgba(0, 0, 0, 0.87)',
-                                padding: '2px 8px',
-                                borderRadius: '12px',
-                                fontSize: '0.75rem',
-                                fontWeight: 500
-                              }}>
-                                {member.role === 'admin' ? '👑' : '👤'} {member.role === 'admin' ? 'Amministratore' : 'Membro'}
-                              </span>
-                            </span>
-                          }
-                        />
-                        {isUserAdmin() && member.user._id !== user?.id && (
-                          <ListItemSecondaryAction>
-                            <IconButton
-                              onClick={(e) => handleMemberMenuOpen(e, member)}
-                            >
-                              <MoreVertOutlined />
-                            </IconButton>
-                          </ListItemSecondaryAction>
-                        )}
-                      </ListItem>
-                      {index < familyData.members.length - 1 && <Divider />}
-                    </React.Fragment>
-                  ))}
-                </List>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
-
-      {activeTab === 1 && (
+      {/* Inviti e Impostazioni Row */}
+      <Box sx={{ display: 'flex', gap: 3, mb: 4, flexWrap: 'wrap' }}>
+        {/* Inviti Pendenti */}
+        <Box sx={{ flex: 1, minWidth: 300 }}>
+          <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 2 }}>
+            📧 Inviti Pendenti
+          </Typography>
+          
         <Card>
-          <CardHeader title="Inviti Pendenti" />
           <CardContent>
             {familyData?.invitations?.filter(inv => inv.status === 'pending').length === 0 ? (
-              <Typography color="text.secondary" textAlign="center" py={4}>
+                <Box sx={{ textAlign: 'center', py: 3 }}>
+                  <EmailOutlined sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
+                  <Typography color="text.secondary" gutterBottom>
                 Nessun invito pendente
               </Typography>
+                  {isUserAdmin() && (
+                    <Button
+                      variant="outlined"
+                      startIcon={<PersonAddOutlined />}
+                      onClick={() => setInviteDialogOpen(true)}
+                      sx={{ mt: 1 }}
+                    >
+                      Invita qualcuno
+                    </Button>
+                  )}
+                </Box>
             ) : (
-              <List>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {familyData.invitations
                   .filter(inv => inv.status === 'pending')
-                  .map((invitation, index) => (
-                    <React.Fragment key={invitation._id}>
-                      <ListItem>
-                        <ListItemAvatar>
-                          <Avatar>
+                    .map((invitation) => (
+                      <Box 
+                        key={invitation._id}
+                        sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 2,
+                          p: 2,
+                          bgcolor: 'grey.50',
+                          borderRadius: 1
+                        }}
+                      >
+                        <Avatar size="small">
                             <EmailOutlined />
                           </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={invitation.email}
-                          secondary={
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                              <span style={{
-                                backgroundColor: invitation.role === 'admin' ? '#d32f2f' : '#e0e0e0',
-                                color: invitation.role === 'admin' ? 'white' : 'rgba(0, 0, 0, 0.87)',
-                                padding: '2px 8px',
-                                borderRadius: '12px',
-                                fontSize: '0.75rem',
-                                fontWeight: 500
-                              }}>
-                                {invitation.role === 'admin' ? 'Amministratore' : 'Membro'}
-                              </span>
-                              <span style={{ fontSize: '0.75rem', color: 'rgba(0, 0, 0, 0.6)' }}>
-                                Invitato il {new Date(invitation.createdAt).toLocaleDateString('it-IT')}
-                              </span>
-                            </span>
-                          }
-                        />
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="body1" fontWeight="medium">
+                            {invitation.email}
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                            <Chip
+                              label={invitation.role === 'admin' ? 'Amministratore' : 'Membro'}
+                              size="small"
+                              color={invitation.role === 'admin' ? 'error' : 'default'}
+                              variant="outlined"
+                            />
+                            <Typography variant="caption" color="text.secondary">
+                              {new Date(invitation.createdAt).toLocaleDateString('it-IT')}
+                            </Typography>
+                          </Box>
+                        </Box>
                         {isUserAdmin() && (
-                          <ListItemSecondaryAction>
                             <IconButton
+                            size="small"
                               onClick={() => handleCancelInvitation(invitation._id)}
                               color="error"
                             >
                               <DeleteOutlined />
                             </IconButton>
-                          </ListItemSecondaryAction>
                         )}
-                      </ListItem>
-                      {index < familyData.invitations.filter(inv => inv.status === 'pending').length - 1 && <Divider />}
-                    </React.Fragment>
+                      </Box>
                   ))}
-              </List>
+                </Box>
             )}
           </CardContent>
         </Card>
-      )}
+        </Box>
 
-      {activeTab === 2 && (
-        <Grid container spacing={3}>
-          {familyData?.members?.map((member) => (
-            <Grid item xs={12} md={6} lg={4} key={member.user._id}>
-              <Card>
-                <CardHeader
-                  avatar={
-                    <Avatar src={member.user.avatar || DEFAULT_AVATAR_URL}>
-                      {!member.user.avatar && member.user.name.charAt(0).toUpperCase()}
-                    </Avatar>
-                  }
-                  title={member.user.name}
-                  subheader={member.role === 'admin' ? 'Amministratore' : 'Membro'}
-                />
-                <CardContent>
-                  <MemberStats memberId={member.user._id} memberName={member.user.name} />
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      )}
-
-      {activeTab === 3 && (
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
+        {/* Impostazioni Famiglia */}
+        <Box sx={{ flex: 1, minWidth: 300 }}>
+          <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 2 }}>
+            ⚙️ Configurazione
+          </Typography>
+          
             <Card>
-              <CardHeader title="Impostazioni Famiglia" />
               <CardContent>
-                <Grid container spacing={3}>
-                  <Grid item xs={12}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <TextField
                       fullWidth
                       label="Nome Famiglia"
                       value={familyName}
                       onChange={(e) => setFamilyName(e.target.value)}
                       disabled={!isUserAdmin()}
-                      helperText={!isUserAdmin() ? "Solo gli amministratori possono modificare il nome" : ""}
+                  size="small"
                     />
-                  </Grid>
-                  <Grid item xs={12}>
                     <TextField
                       fullWidth
                       label="Descrizione"
                       multiline
-                      rows={3}
+                  rows={2}
                       value={familyDescription}
                       onChange={(e) => setFamilyDescription(e.target.value)}
                       disabled={!isUserAdmin()}
-                      helperText={!isUserAdmin() ? "Solo gli amministratori possono modificare la descrizione" : ""}
+                  size="small"
                     />
-                  </Grid>
                   {isUserAdmin() && (
-                    <Grid item xs={12}>
-                      <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
                         <Button
                           variant="contained"
                           onClick={handleSaveFamilySettings}
+                      size="small"
                         >
-                          Salva Modifiche
+                      Salva
                         </Button>
                         <Button
                           variant="outlined"
@@ -539,22 +669,39 @@ const FamilyPage = () => {
                             setFamilyName(familyData?.name || '');
                             setFamilyDescription(familyData?.description || '');
                           }}
+                      size="small"
                         >
-                          Annulla
+                      Reset
                         </Button>
                       </Box>
-                    </Grid>
+                )}
+                {!isUserAdmin() && (
+                  <Typography variant="caption" color="text.secondary">
+                    Solo gli amministratori possono modificare le impostazioni
+                  </Typography>
                   )}
-                </Grid>
+              </Box>
               </CardContent>
             </Card>
-          </Grid>
-          
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardHeader title="Azioni Famiglia" />
-              <CardContent>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        </Box>
+      </Box>
+
+      {/* Azioni Rapide */}
+      <Box sx={{ textAlign: 'center', mb: 4 }}>
+        <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 3 }}>
+          🚀 Azioni Rapide
+        </Typography>
+        
+        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+          {isUserAdmin() && (
+            <Button
+              variant="contained"
+              startIcon={<PersonAddOutlined />}
+              onClick={() => setInviteDialogOpen(true)}
+            >
+              Invita Membro
+            </Button>
+          )}
                   <Button
                     variant="outlined"
                     color="warning"
@@ -568,25 +715,20 @@ const FamilyPage = () => {
                       variant="outlined"
                       color="error"
                       onClick={() => {
-                        // Implementa elimina famiglia
                         console.log('Elimina famiglia');
                       }}
                     >
                       Elimina Famiglia
                     </Button>
                   )}
-                  <Typography variant="caption" color="text.secondary">
-                    {isUserAdmin() && familyData?.members?.length > 1 
-                      ? "Non puoi lasciare la famiglia finché ci sono altri membri. Trasferisci prima i diritti di amministratore."
-                      : "Lasciando la famiglia perderai l'accesso a tutti i dati condivisi."
-                    }
+        </Box>
+        
+        {(isUserAdmin() && familyData?.members?.length > 1) && (
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+            Non puoi lasciare la famiglia finché ci sono altri membri. Trasferisci prima i diritti di amministratore.
                   </Typography>
+        )}
                 </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
 
       {/* Dialog invita membro */}
       <Dialog open={inviteDialogOpen} onClose={() => setInviteDialogOpen(false)} maxWidth="sm" fullWidth>
@@ -624,6 +766,100 @@ const FamilyPage = () => {
           >
             {inviteLoading ? <CircularProgress size={20} /> : 'Invia Invito'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog banner famiglia */}
+      <Dialog open={bannerDialogOpen} onClose={() => setBannerDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Cambia Banner Famiglia</DialogTitle>
+        <DialogContent>
+          <Tabs value={bannerTabValue} onChange={(e, newValue) => setBannerTabValue(newValue)} sx={{ mb: 2 }}>
+            <Tab label="Carica File" />
+            <Tab label="Inserisci URL" />
+          </Tabs>
+          
+          {bannerTabValue === 0 && (
+            <Box sx={{ textAlign: 'center', py: 2 }}>
+              <input
+                accept="image/*"
+                style={{ display: 'none' }}
+                id="banner-upload"
+                type="file"
+                onChange={handleBannerFileUpload}
+                disabled={bannerUploading}
+              />
+              <label htmlFor="banner-upload">
+                <Button
+                  variant="outlined"
+                  component="span"
+                  disabled={bannerUploading}
+                  sx={{ mb: 2 }}
+                >
+                  {bannerUploading ? <CircularProgress size={20} /> : 'Seleziona Immagine'}
+                </Button>
+              </label>
+              <Typography variant="body2" color="text.secondary">
+                Formati supportati: JPG, PNG, WebP (max 5MB)
+              </Typography>
+            </Box>
+          )}
+          
+          {bannerTabValue === 1 && (
+            <Box sx={{ py: 2 }}>
+              <TextField
+                fullWidth
+                label="URL Immagine"
+                value={bannerUrl}
+                onChange={(e) => setBannerUrl(e.target.value)}
+                placeholder="https://esempio.com/immagine.jpg"
+                margin="normal"
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Inserisci l'URL di un'immagine online
+              </Typography>
+            </Box>
+          )}
+          
+          {familyData?.banner && (
+            <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Typography variant="body2" gutterBottom>
+                Banner attuale:
+              </Typography>
+              <Box
+                sx={{
+                  width: '100%',
+                  height: 100,
+                  backgroundImage: `url(${familyData.banner})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  borderRadius: 1,
+                  mb: 1
+                }}
+              />
+              <Button
+                variant="outlined"
+                color="error"
+                size="small"
+                onClick={handleRemoveBanner}
+              >
+                Rimuovi Banner
+              </Button>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBannerDialogOpen(false)}>
+            Annulla
+          </Button>
+          {bannerTabValue === 1 && (
+            <Button
+              onClick={handleBannerUrlSubmit}
+              variant="contained"
+              disabled={bannerUploading || !bannerUrl.trim()}
+            >
+              {bannerUploading ? <CircularProgress size={20} /> : 'Imposta Banner'}
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
 
