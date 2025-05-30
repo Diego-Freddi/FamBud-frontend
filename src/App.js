@@ -20,6 +20,7 @@ import IncomesPage from './pages/IncomesPage';
 import CategoriesPage from './pages/CategoriesPage';
 import BudgetsPage from './pages/BudgetsPage';
 import FamilyPage from './pages/FamilyPage';
+import ProfilePage from './pages/ProfilePage';
 
 function App() {
   return (
@@ -64,7 +65,7 @@ function App() {
               <Route path="categories" element={<CategoriesPage />} />
               <Route path="family" element={<FamilyPage />} />
               <Route path="settings" element={<div>Pagina Impostazioni (da implementare)</div>} />
-              <Route path="profile" element={<div>Pagina Profilo (da implementare)</div>} />
+              <Route path="profile" element={<ProfilePage />} />
               
               {/* Redirect root alla dashboard */}
               <Route index element={<Navigate to="/dashboard" replace />} />

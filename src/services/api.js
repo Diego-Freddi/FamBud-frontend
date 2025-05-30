@@ -89,7 +89,7 @@ export const authAPI = {
 
 // FAMILY SERVICES
 export const familyAPI = {
-  // Info famiglia
+  // Ottieni famiglia
   getFamily: () => api.get('/family'),
   
   // Aggiorna famiglia
@@ -104,13 +104,42 @@ export const familyAPI = {
   // Lascia famiglia
   leaveFamily: () => api.post('/family/leave'),
   
-  // Gestione membri
+  // Aggiorna ruolo membro
   updateMemberRole: (userId, role) => api.put(`/family/members/${userId}`, { role }),
+  
+  // Rimuovi membro
   removeMember: (userId) => api.delete(`/family/members/${userId}`),
   
   // Gestione inviti
   getInvitations: () => api.get('/family/invitations'),
+  
+  // Cancella invito
   cancelInvitation: (invitationId) => api.delete(`/family/invitations/${invitationId}`),
+};
+
+// PROFILE SERVICES
+export const profileAPI = {
+  // Cambia password
+  changePassword: (passwordData) => api.put('/profile/change-password', passwordData),
+  
+  // Cambia email
+  changeEmail: (emailData) => api.put('/profile/change-email', emailData),
+  
+  // Upload avatar
+  uploadAvatar: (formData) => api.post('/profile/upload-avatar', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  }),
+  
+  // Imposta avatar tramite URL
+  setAvatarUrl: (avatarData) => api.put('/profile/set-avatar-url', avatarData),
+  
+  // Esporta dati
+  exportData: () => api.get('/profile/export-data'),
+  
+  // Elimina account
+  deleteAccount: () => api.delete('/profile/delete-account'),
 };
 
 // EXPENSE SERVICES

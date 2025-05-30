@@ -36,6 +36,9 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const drawerWidth = 280;
 
+// URL avatar di default (stesso di ProfilePage)
+const DEFAULT_AVATAR_URL = `https://res.cloudinary.com/dw1vq50a6/image/upload/v1/familybudget/defaults/avatar-default.png`;
+
 const menuItems = [
   {
     text: 'Dashboard',
@@ -212,8 +215,11 @@ const AppLayout = () => {
               onClick={handleMenuClick}
               color="inherit"
             >
-              <Avatar sx={{ width: 32, height: 32 }}>
-                {user?.name?.charAt(0).toUpperCase()}
+              <Avatar 
+                src={user?.avatar || DEFAULT_AVATAR_URL}
+                sx={{ width: 32, height: 32 }}
+              >
+                {!user?.avatar && user?.name?.charAt(0).toUpperCase()}
               </Avatar>
             </IconButton>
           </Box>

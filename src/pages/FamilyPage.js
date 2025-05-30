@@ -47,6 +47,9 @@ import { familyAPI } from '../services/api';
 import MemberStats from '../components/MemberStats';
 import useApiCall from '../hooks/useApiCall';
 
+// URL avatar di default (stesso di ProfilePage e AppLayout)
+const DEFAULT_AVATAR_URL = `https://res.cloudinary.com/dw1vq50a6/image/upload/v1/familybudget/defaults/avatar-default.png`;
+
 const FamilyPage = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
@@ -347,8 +350,8 @@ const FamilyPage = () => {
                     <React.Fragment key={member.user._id}>
                       <ListItem>
                         <ListItemAvatar>
-                          <Avatar>
-                            {member.user.name.charAt(0).toUpperCase()}
+                          <Avatar src={member.user.avatar || DEFAULT_AVATAR_URL}>
+                            {!member.user.avatar && member.user.name.charAt(0).toUpperCase()}
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
@@ -476,8 +479,8 @@ const FamilyPage = () => {
               <Card>
                 <CardHeader
                   avatar={
-                    <Avatar>
-                      {member.user.name.charAt(0).toUpperCase()}
+                    <Avatar src={member.user.avatar || DEFAULT_AVATAR_URL}>
+                      {!member.user.avatar && member.user.name.charAt(0).toUpperCase()}
                     </Avatar>
                   }
                   title={member.user.name}

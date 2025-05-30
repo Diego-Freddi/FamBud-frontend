@@ -55,14 +55,14 @@ export const resetPasswordSchema = yup.object({
   password: yup
     .string()
     .required('La password è obbligatoria')
-    .min(6, 'La password deve essere di almeno 6 caratteri')
+    .min(6, 'La password deve avere almeno 6 caratteri')
     .matches(
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
       'La password deve contenere almeno una lettera minuscola, una maiuscola e un numero'
     ),
   confirmPassword: yup
     .string()
-    .required('Conferma la password')
+    .required('La conferma password è obbligatoria')
     .oneOf([yup.ref('password')], 'Le password non coincidono'),
 });
 
@@ -255,14 +255,14 @@ export const changePasswordSchema = yup.object({
   newPassword: yup
     .string()
     .required('La nuova password è obbligatoria')
-    .min(8, 'La password deve avere almeno 8 caratteri')
-    .matches(/[A-Z]/, 'La password deve contenere almeno una maiuscola')
-    .matches(/[a-z]/, 'La password deve contenere almeno una minuscola')
-    .matches(/[0-9]/, 'La password deve contenere almeno un numero')
-    .matches(/[^A-Za-z0-9]/, 'La password deve contenere almeno un carattere speciale'),
+    .min(6, 'La password deve avere almeno 6 caratteri')
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      'La password deve contenere almeno una lettera minuscola, una maiuscola e un numero'
+    ),
   confirmNewPassword: yup
     .string()
-    .required('Conferma la nuova password')
+    .required('La conferma password è obbligatoria')
     .oneOf([yup.ref('newPassword')], 'Le password non coincidono'),
 });
 
