@@ -70,7 +70,7 @@ const RegisterPage = () => {
       email: '',
       password: '',
       confirmPassword: '',
-      createFamily: !pendingToken, // Se c'è un invito pendente, non creare famiglia
+      createFamily: true, // Sempre true per registrazioni normali
       familyName: '',
     },
   });
@@ -88,7 +88,20 @@ const RegisterPage = () => {
     clearError();
 
     try {
-      const result = await registerUser(data);
+      // Prepara i dati da inviare al backend
+      const registrationData = {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        confirmPassword: data.confirmPassword,
+      };
+
+      // Includi familyName SOLO se createFamily è true
+      if (data.createFamily && data.familyName) {
+        registrationData.familyName = data.familyName;
+      }
+
+      const result = await registerUser(registrationData);
       
       if (result.success) {
         // Registrazione riuscita, controlla se c'è un token di invito pendente E se arriva da invito
@@ -244,22 +257,8 @@ const RegisterPage = () => {
               disabled={submitLoading}
             />
 
-            {/* Mostra opzione creazione famiglia solo se non c'è invito pendente */}
-            {!pendingToken && (
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    {...register('createFamily')}
-                    disabled={submitLoading}
-                  />
-                }
-                label="Crea una nuova famiglia"
-                sx={{ mt: 2, mb: 1 }}
-              />
-            )}
-
             {/* Campo nome famiglia condizionale */}
-            {watchCreateFamily && !pendingToken && (
+            {!pendingToken && (
               <TextField
                 {...register('familyName')}
                 fullWidth
