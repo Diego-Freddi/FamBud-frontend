@@ -118,6 +118,8 @@ const AppLayout = () => {
   const handleLogout = () => {
     handleMenuClose();
     logout();
+    // Naviga al login dopo il logout
+    navigate('/login', { replace: true });
   };
 
   const handleNavigation = (path) => {

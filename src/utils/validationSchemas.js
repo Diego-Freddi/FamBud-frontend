@@ -68,11 +68,14 @@ export const resetPasswordSchema = yup.object({
 
 // Schema per creazione famiglia
 export const createFamilySchema = yup.object({
-  familyName: yup
+  name: yup
     .string()
     .required('Il nome della famiglia è obbligatorio')
     .min(2, 'Il nome deve essere di almeno 2 caratteri')
     .max(50, 'Il nome non può superare i 50 caratteri'),
+  description: yup
+    .string()
+    .max(500, 'La descrizione non può superare i 500 caratteri'),
 });
 
 // Schema per aggiornamento famiglia

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -37,13 +38,22 @@ import { familyAPI, profileAPI } from '../services/api';
 import { changePasswordSchema } from '../utils/validationSchemas';
 import useApiCall from '../hooks/useApiCall';
 import { useSettings } from '../contexts/SettingsContext';
+import * as yup from 'yup';
+
+// Schema per conferma password eliminazione account
+const deleteAccountSchema = yup.object({
+  password: yup
+    .string()
+    .required('La password è obbligatoria per confermare l\'eliminazione')
+});
 
 // URL avatar di default da Cloudinary (fuori dal componente per evitare re-render)
 const DEFAULT_AVATAR_URL = `https://res.cloudinary.com/dw1vq50a6/image/upload/v1/familybudget/defaults/avatar-default.png`;
 
 const ProfilePage = () => {
-  const { user, updateUser, logout } = useAuth();
+  const { user, updateUser, logout, isAuthenticated } = useAuth();
   const { settings, formatDate } = useSettings();
+  const navigate = useNavigate();
   
   // Stati per dialogs
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
@@ -59,6 +69,16 @@ const ProfilePage = () => {
   // Stati per avatar
   const [avatarMethod, setAvatarMethod] = useState('upload'); // 'upload' o 'url'
   const [avatarUrl, setAvatarUrl] = useState('');
+
+  // Stato per gestire l'eliminazione account
+  const [accountDeleted, setAccountDeleted] = useState(false);
+
+  // Effetto per navigare dopo l'eliminazione account
+  useEffect(() => {
+    if (accountDeleted && !isAuthenticated) {
+      navigate('/register', { replace: true });
+    }
+  }, [accountDeleted, isAuthenticated, navigate]);
 
   // Fetch dati famiglia
   const fetchFamilyData = async () => {
@@ -87,6 +107,16 @@ const ProfilePage = () => {
     reset: resetEmailForm,
   } = useForm({
     defaultValues: { email: user?.email || '' },
+  });
+
+  // Form per conferma password eliminazione account
+  const {
+    register: registerDeletePassword,
+    handleSubmit: handleDeleteSubmit,
+    formState: { errors: deletePasswordErrors },
+    reset: resetDeleteForm,
+  } = useForm({
+    resolver: yupResolver(deleteAccountSchema),
   });
 
   // Gestione cambio password
@@ -211,14 +241,19 @@ const ProfilePage = () => {
   };
 
   // Gestione eliminazione account
-  const handleDeleteAccount = async () => {
+  const handleDeleteAccount = async (data) => {
     setLoading(true);
     setError('');
 
     try {
-      await profileAPI.deleteAccount();
+      await profileAPI.deleteAccount({ password: data.password });
       setDeleteDialogOpen(false);
-      // Logout automatico dopo eliminazione
+      resetDeleteForm();
+      
+      // Imposta il flag per indicare che l'account è stato eliminato
+      setAccountDeleted(true);
+      
+      // Logout senza navigazione immediata
       logout();
     } catch (err) {
       setError(err.response?.data?.message || 'Errore nell\'eliminazione account');
@@ -613,38 +648,64 @@ const ProfilePage = () => {
       {/* Dialog Eliminazione Account */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle color="error.main">Elimina Account</DialogTitle>
-        <DialogContent>
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            <Typography variant="body2">
-              <strong>Attenzione!</strong> Questa azione è irreversibile.
+        <form onSubmit={handleDeleteSubmit(handleDeleteAccount)}>
+          <DialogContent>
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              <Typography variant="body2">
+                <strong>Attenzione!</strong> Questa azione è irreversibile.
+              </Typography>
+            </Alert>
+            
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+            
+            <Typography variant="body2" paragraph>
+              Eliminando il tuo account:
             </Typography>
-          </Alert>
-          <Typography variant="body2" paragraph>
-            Eliminando il tuo account:
-          </Typography>
-          <Typography variant="body2" component="ul" sx={{ pl: 2 }}>
-            <li>Perderai accesso a tutti i tuoi dati</li>
-            <li>Le tue spese e entrate saranno rimosse</li>
-            <li>Se sei l'unico admin della famiglia, la famiglia sarà eliminata</li>
-          </Typography>
-          <Typography variant="body2" sx={{ mt: 2 }}>
-            Sei sicuro di voler procedere?
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>
-            Annulla
-          </Button>
-          <Button 
-            onClick={handleDeleteAccount}
-            color="error"
-            variant="contained"
-            disabled={loading}
-            startIcon={loading && <CircularProgress size={16} />}
-          >
-            Elimina Account
-          </Button>
-        </DialogActions>
+            <Typography variant="body2" component="ul" sx={{ pl: 2, mb: 2 }}>
+              <li>Perderai accesso a tutti i tuoi dati</li>
+              <li>Le tue spese e entrate saranno rimosse</li>
+              <li>Se sei l'unico membro della famiglia, la famiglia sarà eliminata</li>
+              <li>Se sei amministratore, i privilegi saranno trasferiti automaticamente</li>
+            </Typography>
+            
+            <Typography variant="body2" sx={{ mb: 2, fontWeight: 'bold' }}>
+              Inserisci la tua password per confermare l'eliminazione:
+            </Typography>
+            
+            <TextField
+              {...registerDeletePassword('password')}
+              fullWidth
+              label="Password"
+              type="password"
+              margin="normal"
+              error={!!deletePasswordErrors.password}
+              helperText={deletePasswordErrors.password?.message}
+              autoFocus
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => {
+              setDeleteDialogOpen(false);
+              resetDeleteForm();
+              setError('');
+            }}>
+              Annulla
+            </Button>
+            <Button 
+              type="submit"
+              color="error"
+              variant="contained"
+              disabled={loading}
+              startIcon={loading && <CircularProgress size={16} />}
+            >
+              Elimina Account
+            </Button>
+          </DialogActions>
+        </form>
       </Dialog>
     </Box>
   );

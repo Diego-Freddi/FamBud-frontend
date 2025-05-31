@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import { authAPI, handleAPIError } from '../services/api';
 
 // Stato iniziale
@@ -148,7 +148,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // Funzione di login
-  const login = async (credentials) => {
+  const login = useCallback(async (credentials) => {
     try {
       dispatch({ type: AUTH_ACTIONS.LOGIN_START });
 
@@ -175,10 +175,10 @@ export const AuthProvider = ({ children }) => {
 
       return { success: false, error: errorInfo.message };
     }
-  };
+  }, []);
 
   // Funzione di registrazione
-  const register = async (userData) => {
+  const register = useCallback(async (userData) => {
     try {
       dispatch({ type: AUTH_ACTIONS.REGISTER_START });
 
@@ -205,10 +205,10 @@ export const AuthProvider = ({ children }) => {
 
       return { success: false, error: errorInfo.message };
     }
-  };
+  }, []);
 
   // Funzione di logout
-  const logout = () => {
+  const logout = useCallback(() => {
     try {
       // Rimuovi dati da localStorage
       localStorage.removeItem('token');
@@ -218,17 +218,16 @@ export const AuthProvider = ({ children }) => {
       // Pulisci lo stato
       dispatch({ type: AUTH_ACTIONS.LOGOUT });
       
-      // Forza il reload della pagina per pulire completamente lo stato
-      window.location.href = '/login';
+      // Non fare reindirizzamento automatico - lascia che sia il chiamante a decidere
     } catch (error) {
       console.error('Errore durante il logout:', error);
-      // Forza comunque il redirect
-      window.location.href = '/login';
+      // Pulisci comunque lo stato
+      dispatch({ type: AUTH_ACTIONS.LOGOUT });
     }
-  };
+  }, []);
 
   // Funzione per creare famiglia
-  const createFamily = async (familyData) => {
+  const createFamily = useCallback(async (familyData) => {
     try {
       const response = await authAPI.createFamily(familyData);
       const { user } = response.data.data;
@@ -246,10 +245,10 @@ export const AuthProvider = ({ children }) => {
       const errorInfo = handleAPIError(error);
       return { success: false, error: errorInfo.message };
     }
-  };
+  }, []);
 
   // Funzione per reset password
-  const forgotPassword = async (email) => {
+  const forgotPassword = useCallback(async (email) => {
     try {
       await authAPI.forgotPassword(email);
       return { success: true };
@@ -257,10 +256,10 @@ export const AuthProvider = ({ children }) => {
       const errorInfo = handleAPIError(error);
       return { success: false, error: errorInfo.message };
     }
-  };
+  }, []);
 
   // Funzione per reset password con token
-  const resetPassword = async (token, password) => {
+  const resetPassword = useCallback(async (token, password) => {
     try {
       await authAPI.resetPassword(token, password);
       return { success: true };
@@ -268,10 +267,10 @@ export const AuthProvider = ({ children }) => {
       const errorInfo = handleAPIError(error);
       return { success: false, error: errorInfo.message };
     }
-  };
+  }, []);
 
   // Funzione per aggiornare profilo utente
-  const updateUser = (userData) => {
+  const updateUser = useCallback((userData) => {
     const updatedUser = { ...state.user, ...userData };
     localStorage.setItem('user', JSON.stringify(updatedUser));
     
@@ -279,12 +278,12 @@ export const AuthProvider = ({ children }) => {
       type: AUTH_ACTIONS.UPDATE_USER,
       payload: { user: userData },
     });
-  };
+  }, [state.user]);
 
   // Funzione per pulire errori
-  const clearError = () => {
+  const clearError = useCallback(() => {
     dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-  };
+  }, []);
 
   // Valore del context
   const value = {

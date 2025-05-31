@@ -40,7 +40,7 @@ api.interceptors.response.use(
       message: error.response?.data?.message || error.message
     });
 
-    // Se il token è scaduto o non valido, rimuovilo e reindirizza al login
+    // Se il token è scaduto o non valido, rimuovilo
     if (error.response?.status === 401) {
       // Verifica che sia davvero un problema di autenticazione
       const errorMessage = error.response?.data?.message || '';
@@ -50,15 +50,13 @@ api.interceptors.response.use(
                          errorMessage.includes('scaduto');
       
       if (isAuthError) {
-        console.warn('Token authentication failed, logging out:', errorMessage);
+        console.warn('Token authentication failed, clearing localStorage:', errorMessage);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('dashboard_last_refresh');
         
-        // Evita loop infiniti controllando se siamo già nella pagina di login
-        if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login';
-        }
+        // Non fare reindirizzamento automatico - lascia che sia React Router a gestirlo
+        // Il PrivateRoute si accorgerà che isAuthenticated è false e reindirizza
       }
     }
     
@@ -152,7 +150,7 @@ export const profileAPI = {
   exportData: () => api.get('/profile/export-data'),
   
   // Elimina account
-  deleteAccount: () => api.delete('/profile/delete-account'),
+  deleteAccount: (passwordData) => api.delete('/profile/delete-account', { data: passwordData }),
 };
 
 // EXPENSE SERVICES
