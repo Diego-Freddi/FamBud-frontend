@@ -442,7 +442,7 @@ const FamilyPage = () => {
           <Box sx={{ flex: 1, minWidth: 300 }}>
             <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ mb: 2 }}>
               👥 Membri Attivi ({familyData?.activeMembers?.length || 0})
-            </Typography>
+                </Typography>
             
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               {familyData?.activeMembers?.map((member) => (
@@ -469,18 +469,18 @@ const FamilyPage = () => {
                           }}
                         >
                           {!member.user.avatar && member.user.name.charAt(0).toUpperCase()}
-                        </Avatar>
+                          </Avatar>
                         <Box sx={{ flex: 1 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                             <Typography variant="h6" fontWeight="bold">
-                              {member.user.name}
+                                {member.user.name}
                             </Typography>
-                            {member.user._id === user?.id && (
+                              {member.user._id === user?.id && (
                               <Chip label="Tu" size="small" color="primary" />
                             )}
                           </Box>
                           <Typography variant="body2" color="text.secondary">
-                            {member.user.email}
+                                {member.user.email}
                           </Typography>
                         </Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -489,8 +489,8 @@ const FamilyPage = () => {
                               transform: expandedMembers.has(member.user._id) ? 'rotate(180deg)' : 'rotate(0deg)',
                               transition: 'transform 0.2s'
                             }} 
-                          />
-                          {isUserAdmin() && member.user._id !== user?.id && (
+                        />
+                        {isUserAdmin() && member.user._id !== user?.id && (
                             <IconButton
                               size="small"
                               onClick={(e) => {
@@ -617,7 +617,7 @@ const FamilyPage = () => {
                             📊 Clicca per statistiche storiche
                           </Typography>
                         </Box>
-                      </CardContent>
+              </CardContent>
                       
                       {/* Sezione Statistiche Espandibili per Ex-Membri */}
                       <Collapse in={expandedMembers.has(formerMember.user._id)} timeout="auto" unmountOnExit>
@@ -640,7 +640,7 @@ const FamilyPage = () => {
                           <MemberStats memberId={formerMember.user._id} memberName={formerMember.user.name} />
                         </Box>
                       </Collapse>
-                    </Card>
+            </Card>
                   </Box>
                 ))}
               </Box>

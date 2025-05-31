@@ -632,9 +632,9 @@ const IncomesPage = () => {
                           </TableCell>
                       
                           <TableCell>
-                          <Typography variant="body1" fontWeight="bold" color="success.main">
+                        <Typography variant="body1" fontWeight="bold" color="success.main">
                            +{formatCurrency(income.amount)}
-                          </Typography>
+                        </Typography>
                           </TableCell>
                       
                           {/* Fonte - nascosta su mobile */}
