@@ -96,6 +96,9 @@ export const familyAPI = {
   // Invita membro
   inviteMember: (inviteData) => api.post('/family/invite', inviteData),
   
+  // Verifica dettagli invito
+  verifyInvite: (token) => api.get(`/family/invite/${token}`),
+  
   // Accetta invito
   joinFamily: (token) => api.post(`/family/join/${token}`),
   

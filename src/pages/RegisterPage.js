@@ -13,16 +13,21 @@ import {
   CircularProgress,
   Divider,
   Link as MuiLink,
+  Card,
+  CardContent,
 } from '@mui/material';
 import { PersonAddOutlined, FamilyRestroomOutlined } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { registerSchema } from '../utils/validationSchemas';
+import { familyAPI } from '../services/api';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { register: registerUser, isAuthenticated, error, clearError } = useAuth();
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [inviteDetails, setInviteDetails] = useState(null);
+  const [loadingInviteDetails, setLoadingInviteDetails] = useState(false);
 
   // Controlla se c'è un messaggio dallo state (da JoinFamilyPage)
   const stateMessage = location.state?.message;
@@ -32,6 +37,28 @@ const RegisterPage = () => {
   
   // Controlla se c'è un token di invito pendente SOLO se arriva da invito
   const pendingToken = isFromInvite ? localStorage.getItem('pendingInviteToken') : null;
+
+  // Carica i dettagli dell'invito se c'è un token pendente
+  useEffect(() => {
+    const loadInviteDetails = async () => {
+      if (!pendingToken) return;
+
+      setLoadingInviteDetails(true);
+      try {
+        const response = await familyAPI.verifyInvite(pendingToken);
+        if (response.data.success) {
+          setInviteDetails(response.data.data);
+        }
+      } catch (err) {
+        console.error('Errore nel caricamento dettagli invito:', err);
+        // Non mostrare errore all'utente, continua con la registrazione normale
+      } finally {
+        setLoadingInviteDetails(false);
+      }
+    };
+
+    loadInviteDetails();
+  }, [pendingToken]);
 
   // Redirect se già autenticato
   useEffect(() => {
@@ -67,7 +94,7 @@ const RegisterPage = () => {
       email: '',
       password: '',
       confirmPassword: '',
-      createFamily: true, // Sempre true per registrazioni normali
+      createFamily: !pendingToken, // false se c'è un invito pendente, true altrimenti
       familyName: '',
     },
   });
@@ -79,10 +106,22 @@ const RegisterPage = () => {
 
   // Gestione submit
   const onSubmit = async (data) => {
+    console.log('🚀 RegisterPage - onSubmit function called!');
     setSubmitLoading(true);
     clearError();
 
     try {
+      console.log('🔍 RegisterPage - Starting registration with data:', {
+        name: data.name,
+        email: data.email,
+        hasPassword: !!data.password,
+        hasConfirmPassword: !!data.confirmPassword,
+        createFamily: data.createFamily,
+        familyName: data.familyName,
+        pendingToken,
+        isFromInvite
+      });
+
       // Prepara i dati da inviare al backend
       const registrationData = {
         name: data.name,
@@ -96,11 +135,18 @@ const RegisterPage = () => {
         registrationData.familyName = data.familyName;
       }
 
+      console.log('📤 RegisterPage - Sending registration data:', registrationData);
+
       const result = await registerUser(registrationData);
       
+      console.log('📥 RegisterPage - Registration result:', result);
+      
       if (result.success) {
+        console.log('✅ RegisterPage - Registration successful');
+        
         // Registrazione riuscita, controlla se c'è un token di invito pendente E se arriva da invito
         if (pendingToken && isFromInvite) {
+          console.log('🔄 RegisterPage - Redirecting to join family with token:', pendingToken);
           navigate(`/join-family/${pendingToken}`, { replace: true });
           return;
         }
@@ -109,22 +155,30 @@ const RegisterPage = () => {
         if (!isFromInvite) {
           const anyPendingToken = localStorage.getItem('pendingInviteToken');
           if (anyPendingToken) {
+            console.log('🧹 RegisterPage - Cleaning pending token');
             localStorage.removeItem('pendingInviteToken');
           }
         }
         
         // Altrimenti redirect normale
+        console.log('🏠 RegisterPage - Redirecting to dashboard');
         navigate('/dashboard', { replace: true });
       } else {
+        console.error('❌ RegisterPage - Registration failed:', result.error);
+        
         // Errore dal server
         if (result.error.includes('email')) {
           setError('email', { message: result.error });
         } else if (result.error.includes('nome')) {
           setError('name', { message: result.error });
+        } else {
+          // Mostra errore generico se non è specifico per un campo
+          console.error('❌ RegisterPage - Generic error:', result.error);
+          // L'errore generico dovrebbe essere già gestito dallo stato error del context
         }
       }
     } catch (err) {
-      console.error('Register error:', err);
+      console.error('💥 RegisterPage - Exception during registration:', err);
     } finally {
       setSubmitLoading(false);
     }
@@ -177,6 +231,31 @@ const RegisterPage = () => {
             }
           </Typography>
 
+          {/* Dettagli invito */}
+          {pendingToken && inviteDetails && !loadingInviteDetails && (
+            <Card sx={{ mb: 3, bgcolor: 'primary.50' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom color="primary.main">
+                  📋 Invito Famiglia
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  <strong>Famiglia:</strong> {inviteDetails.familyName}
+                </Typography>
+                {inviteDetails.familyDescription && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    {inviteDetails.familyDescription}
+                  </Typography>
+                )}
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  <strong>Invitato da:</strong> {inviteDetails.inviterName}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Ruolo:</strong> {inviteDetails.role === 'admin' ? 'Amministratore' : 'Membro'}
+                </Typography>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Messaggio da JoinFamilyPage */}
           {stateMessage && (
             <Alert severity="info" sx={{ width: '100%', mb: 2 }}>
@@ -185,7 +264,7 @@ const RegisterPage = () => {
           )}
 
           {/* Avviso invito pendente */}
-          {pendingToken && (
+          {pendingToken && !inviteDetails && !loadingInviteDetails && (
             <Alert severity="info" sx={{ width: '100%', mb: 2 }}>
               Hai un invito famiglia pendente. Dopo la registrazione verrai automaticamente reindirizzato per accettarlo.
             </Alert>
@@ -271,6 +350,11 @@ const RegisterPage = () => {
               variant="contained"
               size="large"
               disabled={submitLoading}
+              onClick={() => {
+                console.log('🖱️ RegisterPage - Button clicked!');
+                console.log('🔍 RegisterPage - Form errors:', errors);
+                console.log('🔍 RegisterPage - Submit loading:', submitLoading);
+              }}
               startIcon={
                 submitLoading ? (
                   <CircularProgress size={20} />

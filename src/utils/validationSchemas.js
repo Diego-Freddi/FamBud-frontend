@@ -36,9 +36,14 @@ export const registerSchema = yup.object({
     .oneOf([yup.ref('password')], 'Le password non coincidono'),
   familyName: yup
     .string()
+    .when('createFamily', {
+      is: true,
+      then: (schema) => schema
         .required('Il nome della famiglia è obbligatorio')
         .min(2, 'Il nome famiglia deve avere almeno 2 caratteri')
         .max(50, 'Il nome famiglia non può superare i 50 caratteri'),
+      otherwise: (schema) => schema.notRequired(),
+    }),
   createFamily: yup.boolean(),
 });
 

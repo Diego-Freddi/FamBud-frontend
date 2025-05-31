@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Container,
@@ -12,12 +12,15 @@ import {
   CardContent,
   Avatar,
   Divider,
+  Chip,
 } from '@mui/material';
 import { 
   FamilyRestroomOutlined, 
   PersonAddOutlined, 
   LoginOutlined,
-  OpenInNewOutlined
+  OpenInNewOutlined,
+  PersonOutlined,
+  EmailOutlined
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { familyAPI } from '../services/api';
@@ -31,6 +34,34 @@ const JoinFamilyPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [inviteDetails, setInviteDetails] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(true);
+
+  // Carica i dettagli dell'invito
+  useEffect(() => {
+    const loadInviteDetails = async () => {
+      if (!token) {
+        setLoadingDetails(false);
+        return;
+      }
+
+      try {
+        const response = await familyAPI.verifyInvite(token);
+        if (response.data.success) {
+          setInviteDetails(response.data.data);
+        } else {
+          setError(response.data.message || 'Invito non valido');
+        }
+      } catch (err) {
+        const errorMessage = err.response?.data?.message || 'Errore nel caricamento dei dettagli dell\'invito';
+        setError(errorMessage);
+      } finally {
+        setLoadingDetails(false);
+      }
+    };
+
+    loadInviteDetails();
+  }, [token]);
 
   // Gestisce l'accettazione dell'invito
   const handleAcceptInvite = async () => {
@@ -130,6 +161,21 @@ const JoinFamilyPage = () => {
     );
   }
 
+  if (loadingDetails) {
+    return (
+      <Container maxWidth="sm" sx={{ mt: 8 }}>
+        <Paper elevation={3} sx={{ p: 4 }}>
+          <Box textAlign="center">
+            <CircularProgress sx={{ mb: 2 }} />
+            <Typography variant="body1">
+              Caricamento dettagli invito...
+            </Typography>
+          </Box>
+        </Paper>
+      </Container>
+    );
+  }
+
   return (
     <Container maxWidth="sm" sx={{ mt: 8 }}>
       <Paper elevation={3} sx={{ p: 4 }}>
@@ -140,10 +186,62 @@ const JoinFamilyPage = () => {
           <Typography variant="h4" component="h1" gutterBottom>
             Invito Famiglia
           </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Sei stato invitato a unirti a una famiglia su FamilyBudget
-          </Typography>
+          {inviteDetails ? (
+            <Typography variant="body1" color="text.secondary">
+              Sei stato invitato a unirti alla famiglia <strong>{inviteDetails.familyName}</strong>
+            </Typography>
+          ) : (
+            <Typography variant="body1" color="text.secondary">
+              Sei stato invitato a unirti a una famiglia su FamilyBudget
+            </Typography>
+          )}
         </Box>
+
+        {/* Dettagli invito */}
+        {inviteDetails && (
+          <Card sx={{ mb: 3, bgcolor: 'primary.50' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom color="primary.main">
+                📋 Dettagli Invito
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <FamilyRestroomOutlined color="primary" fontSize="small" />
+                  <Typography variant="body2">
+                    <strong>Famiglia:</strong> {inviteDetails.familyName}
+                  </Typography>
+                </Box>
+                {inviteDetails.familyDescription && (
+                  <Typography variant="body2" color="text.secondary" sx={{ ml: 3 }}>
+                    {inviteDetails.familyDescription}
+                  </Typography>
+                )}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <PersonOutlined color="primary" fontSize="small" />
+                  <Typography variant="body2">
+                    <strong>Invitato da:</strong> {inviteDetails.inviterName}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <EmailOutlined color="primary" fontSize="small" />
+                  <Typography variant="body2">
+                    <strong>Email invitata:</strong> {inviteDetails.invitedEmail}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Chip 
+                    label={inviteDetails.role === 'admin' ? 'Amministratore' : 'Membro'} 
+                    color={inviteDetails.role === 'admin' ? 'secondary' : 'primary'}
+                    size="small"
+                  />
+                  <Typography variant="body2">
+                    <strong>Ruolo:</strong> {inviteDetails.role === 'admin' ? 'Amministratore' : 'Membro'}
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        )}
 
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
@@ -157,6 +255,16 @@ const JoinFamilyPage = () => {
           </Alert>
         )}
 
+        {/* Verifica email se l'utente è autenticato */}
+        {isAuthenticated && inviteDetails && user?.email !== inviteDetails.invitedEmail && (
+          <Alert severity="warning" sx={{ mb: 3 }}>
+            <Typography variant="body2">
+              <strong>Attenzione:</strong> Sei loggato come <strong>{user.email}</strong>, 
+              ma l'invito è stato inviato a <strong>{inviteDetails.invitedEmail}</strong>.
+            </Typography>
+          </Alert>
+        )}
+
         {!isAuthenticated ? (
           // Utente non autenticato - mostra opzioni login/registrazione
           <Card sx={{ mb: 3 }}>
@@ -167,10 +275,12 @@ const JoinFamilyPage = () => {
               <Typography variant="body2" color="text.secondary" paragraph>
                 Per accettare l'invito devi effettuare il login con l'account corretto o registrarti se non hai ancora un account.
               </Typography>
-              <Alert severity="info" sx={{ mb: 2 }}>
-                <strong>Importante:</strong> L'invito è stato inviato a un indirizzo email specifico. 
-                Assicurati di accedere con l'account corretto.
-              </Alert>
+              {inviteDetails && (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  <strong>Importante:</strong> L'invito è stato inviato a <strong>{inviteDetails.invitedEmail}</strong>. 
+                  Assicurati di accedere con questo indirizzo email.
+                </Alert>
+              )}
               <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
                 <Button
                   variant="contained"

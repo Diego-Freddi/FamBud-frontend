@@ -444,103 +444,115 @@ const FamilyPage = () => {
               👥 Membri Attivi ({familyData?.activeMembers?.length || 0})
                 </Typography>
             
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              {familyData?.activeMembers?.map((member) => (
-                <Box key={member.user._id} sx={{ minWidth: 280, maxWidth: 360 }}>
-                  <Card 
-                    sx={{ 
-                      transition: 'all 0.2s',
-                      cursor: 'pointer',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: 4,
-                      }
-                    }}
-                    onClick={() => toggleMemberExpansion(member.user._id)}
-                  >
-                    <CardContent sx={{ p: 3 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                        <Avatar 
-                          src={member.user.avatar || DEFAULT_AVATAR_URL}
-                          sx={{ 
-                            width: 56, 
-                            height: 56,
-                            border: member.role === 'admin' ? '3px solid #d32f2f' : '3px solid #1976d2'
-                          }}
-                        >
-                          {!member.user.avatar && member.user.name.charAt(0).toUpperCase()}
+            {familyData?.activeMembers && familyData.activeMembers.length > 0 ? (
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                {familyData.activeMembers
+                  .filter(member => member.user) // Filtra membri con utente valido
+                  .map((member) => (
+                  <Box key={member.user._id} sx={{ minWidth: 280, maxWidth: 360 }}>
+                    <Card 
+                      sx={{ 
+                        border: '1px solid',
+                        borderColor: member.role === 'admin' ? 'error.main' : 'primary.main',
+                        transition: 'all 0.2s',
+                        cursor: 'pointer',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: 3,
+                        }
+                      }}
+                      onClick={() => toggleMemberExpansion(member.user._id)}
+                    >
+                      <CardContent sx={{ p: 3 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                          <Avatar 
+                            src={member.user?.avatar || DEFAULT_AVATAR_URL}
+                            sx={{ 
+                              width: 56, 
+                              height: 56,
+                              border: member.role === 'admin' ? '3px solid #d32f2f' : '3px solid #1976d2'
+                            }}
+                          >
+                            {!member.user?.avatar && member.user?.name?.charAt(0)?.toUpperCase()}
                           </Avatar>
-                        <Box sx={{ flex: 1 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                            <Typography variant="h6" fontWeight="bold">
-                                {member.user.name}
+                          <Box sx={{ flex: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                              <Typography variant="h6" fontWeight="bold">
+                                {member.user?.name || 'Utente eliminato'}
+                              </Typography>
+                              {member.user?._id === user?.id && (
+                                <Chip label="Tu" size="small" color="primary" />
+                              )}
+                            </Box>
+                            <Typography variant="body2" color="text.secondary">
+                              {member.user?.email || 'Email non disponibile'}
                             </Typography>
-                              {member.user._id === user?.id && (
-                              <Chip label="Tu" size="small" color="primary" />
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <ExpandMoreOutlined 
+                              sx={{ 
+                                transform: expandedMembers.has(member.user._id) ? 'rotate(180deg)' : 'rotate(0deg)',
+                                transition: 'transform 0.2s'
+                              }} 
+                            />
+                            {isUserAdmin() && member.user?._id !== user?.id && (
+                              <IconButton
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMemberMenuOpen(e, member);
+                                }}
+                              >
+                                <MoreVertOutlined />
+                              </IconButton>
                             )}
                           </Box>
-                          <Typography variant="body2" color="text.secondary">
-                                {member.user.email}
+                        </Box>
+                        
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Chip
+                            icon={member.role === 'admin' ? <span>👑</span> : <span>👤</span>}
+                            label={member.role === 'admin' ? 'Amministratore' : 'Membro'}
+                            color={member.role === 'admin' ? 'error' : 'default'}
+                            variant="outlined"
+                          />
+                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                            📊 Clicca per statistiche
                           </Typography>
                         </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <ExpandMoreOutlined 
-                            sx={{ 
-                              transform: expandedMembers.has(member.user._id) ? 'rotate(180deg)' : 'rotate(0deg)',
-                              transition: 'transform 0.2s'
-                            }} 
-                        />
-                        {isUserAdmin() && member.user._id !== user?.id && (
-                            <IconButton
-                              size="small"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleMemberMenuOpen(e, member);
-                              }}
-                            >
-                              <MoreVertOutlined />
-                            </IconButton>
-                          )}
-                        </Box>
-                      </Box>
+                      </CardContent>
                       
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Chip
-                          icon={member.role === 'admin' ? <span>👑</span> : <span>👤</span>}
-                          label={member.role === 'admin' ? 'Amministratore' : 'Membro'}
-                          color={member.role === 'admin' ? 'error' : 'default'}
-                          variant="outlined"
-                        />
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                          📊 Clicca per statistiche
-                        </Typography>
-                      </Box>
-                    </CardContent>
-                    
-                    {/* Sezione Statistiche Espandibile */}
-                    <Collapse in={expandedMembers.has(member.user._id)} timeout="auto" unmountOnExit>
-                      <Box sx={{ 
-                        borderTop: '1px solid', 
-                        borderColor: 'divider',
-                        bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.50',
-                        p: 2
-                      }}>
-                        <Typography variant="subtitle2" gutterBottom sx={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: 1,
-                          mb: 2,
-                          fontWeight: 'bold'
+                      {/* Sezione Statistiche Espandibile */}
+                      <Collapse in={expandedMembers.has(member.user._id)} timeout="auto" unmountOnExit>
+                        <Box sx={{ 
+                          borderTop: '1px solid', 
+                          borderColor: 'divider',
+                          bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.50',
+                          p: 2
                         }}>
-                          📊 Statistiche di {member.user.name}
-                        </Typography>
-                        <MemberStats memberId={member.user._id} memberName={member.user.name} />
-                      </Box>
-                    </Collapse>
-                  </Card>
-                </Box>
-              ))}
-            </Box>
+                          <Typography variant="subtitle2" gutterBottom sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 1,
+                            mb: 2,
+                            fontWeight: 'bold'
+                          }}>
+                            📊 Statistiche di {member.user?.name || 'Utente eliminato'}
+                          </Typography>
+                          <MemberStats memberId={member.user._id} memberName={member.user?.name || 'Utente eliminato'} />
+                        </Box>
+                      </Collapse>
+                    </Card>
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography color="text.secondary" variant="body2">
+                  Nessun membro attivo
+                </Typography>
+              </Box>
+            )}
           </Box>
 
           {/* Colonna Destra: Ex-Membri */}
@@ -551,7 +563,9 @@ const FamilyPage = () => {
             
             {familyData?.formerMembers && familyData.formerMembers.length > 0 ? (
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                {familyData.formerMembers.map((formerMember) => (
+                {familyData.formerMembers
+                  .filter(formerMember => formerMember.user) // Filtra ex-membri con utente valido
+                  .map((formerMember) => (
                   <Box key={formerMember.user._id} sx={{ minWidth: 280, maxWidth: 360 }}>
                     <Card 
                       sx={{ 
@@ -570,7 +584,7 @@ const FamilyPage = () => {
                       <CardContent sx={{ p: 3 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                           <Avatar 
-                            src={formerMember.user.avatar || DEFAULT_AVATAR_URL}
+                            src={formerMember.user?.avatar || DEFAULT_AVATAR_URL}
                             sx={{ 
                               width: 56, 
                               height: 56,
@@ -578,17 +592,17 @@ const FamilyPage = () => {
                               border: '3px solid #9e9e9e'
                             }}
                           >
-                            {!formerMember.user.avatar && formerMember.user.name.charAt(0).toUpperCase()}
+                            {!formerMember.user?.avatar && formerMember.user?.name?.charAt(0)?.toUpperCase()}
                           </Avatar>
                           <Box sx={{ flex: 1 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="h6" fontWeight="bold" sx={{ color: 'text.secondary' }}>
-                                {formerMember.user.name}
+                                {formerMember.user?.name || 'Utente eliminato'}
                               </Typography>
                               <Chip label="Ex-membro" size="small" color="default" variant="outlined" />
                             </Box>
                             <Typography variant="body2" color="text.secondary">
-                              {formerMember.user.email}
+                              {formerMember.user?.email || 'Email non disponibile'}
                             </Typography>
                             {formerMember.leftAt && (
                               <Typography variant="caption" color="text.secondary">
@@ -617,7 +631,7 @@ const FamilyPage = () => {
                             📊 Clicca per statistiche storiche
                           </Typography>
                         </Box>
-              </CardContent>
+                      </CardContent>
                       
                       {/* Sezione Statistiche Espandibili per Ex-Membri */}
                       <Collapse in={expandedMembers.has(formerMember.user._id)} timeout="auto" unmountOnExit>
@@ -635,12 +649,12 @@ const FamilyPage = () => {
                             fontWeight: 'bold',
                             color: 'text.secondary'
                           }}>
-                            📊 Statistiche storiche di {formerMember.user.name}
+                            📊 Statistiche storiche di {formerMember.user?.name || 'Utente eliminato'}
                           </Typography>
-                          <MemberStats memberId={formerMember.user._id} memberName={formerMember.user.name} />
+                          <MemberStats memberId={formerMember.user._id} memberName={formerMember.user?.name || 'Utente eliminato'} />
                         </Box>
                       </Collapse>
-            </Card>
+                    </Card>
                   </Box>
                 ))}
               </Box>
