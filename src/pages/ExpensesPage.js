@@ -37,33 +37,30 @@ import {
 } from '@mui/material';
 import {
   AddOutlined,
-  FilterListOutlined,
-  SearchOutlined,
+  ReceiptOutlined,
   MoreVertOutlined,
   EditOutlined,
   DeleteOutlined,
-  ReceiptOutlined,
-  CalendarTodayOutlined,
-  EuroOutlined,
-  CategoryOutlined,
-  PersonOutlined,
+  FilterListOutlined,
+  SearchOutlined,
   RefreshOutlined,
-  FileDownloadOutlined,
-  SortOutlined,
-  ArrowUpwardOutlined,
-  ArrowDownwardOutlined,
+  CalendarTodayOutlined,
+  RepeatOutlined,
+  PersonOutlined,
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { it } from 'date-fns/locale';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { it, enUS } from 'date-fns/locale';
+import { startOfMonth, endOfMonth } from 'date-fns';
 import { expenseAPI, categoryAPI } from '../services/api';
 import ExpenseForm from '../components/Expenses/ExpenseForm';
 import { categoryColors } from '../styles/theme';
 import useApiCall from '../hooks/useApiCall';
+import { useSettings } from '../contexts/SettingsContext';
 
 const ExpensesPage = () => {
+  const { settings, formatCurrency, formatDate } = useSettings();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
@@ -105,15 +102,9 @@ const ExpensesPage = () => {
     const serverSortFields = ['date', 'description', 'amount'];
     const useServerSort = serverSortFields.includes(sortBy);
     
-    // Se la ricerca è < 3 caratteri, non inviare il parametro search al backend
-    // Così il backend restituisce tutti i risultati e il frontend fa la ricerca estesa
-    const useBackendSearch = filters.search && filters.search.length >= 3;
-    
     return {
       page,
       limit: 10,
-      // Non inviare search al backend se facciamo ricerca frontend
-      search: useBackendSearch ? undefined : undefined,
       category: filters.category === 'all' ? undefined : filters.category,
       startDate: filters.startDate ? filters.startDate.toISOString() : undefined,
       endDate: filters.endDate ? filters.endDate.toISOString() : undefined,
@@ -135,18 +126,19 @@ const ExpensesPage = () => {
   }, [apiParams]);
 
   // Uso l'hook per gestire le chiamate API
-  const { data: categoriesResponse, loading: categoriesLoading, refetch: refetchCategories } = useApiCall(fetchCategories, []);
+  const { data: categoriesResponse } = useApiCall(fetchCategories, []);
   const { data: expensesResponse, loading: expensesLoading, error: expensesError, refetch: refetchExpenses } = useApiCall(fetchExpenses, [apiParams]);
 
   // Estraggo i dati dalle risposte
   const categories = categoriesResponse?.data?.categories || [];
-  const expenses = expensesResponse?.data?.expenses || [];
   const pagination = expensesResponse?.data?.pagination || {};
   const totalPages = pagination.pages || 1;
   const totalExpenses = pagination.total || 0;
 
   // Funzione per ordinamento locale (per campi popolati come categoria e utente)
   const sortExpensesLocally = useMemo(() => {
+    const expenses = expensesResponse?.data?.expenses || [];
+    
     if (!expenses.length) return expenses;
     
     // Solo per ordinamenti locali (categoria e utente)
@@ -171,7 +163,7 @@ const ExpensesPage = () => {
     
     // Per altri ordinamenti, usa i dati dal server
     return expenses;
-  }, [expenses, sortBy, sortOrder]);
+  }, [expensesResponse?.data?.expenses, sortBy, sortOrder]);
 
   // Funzione per filtrare localmente per ricerca estesa (categoria e utente)
   const filteredExpenses = useMemo(() => {
@@ -276,17 +268,6 @@ const ExpensesPage = () => {
   };
 
   // Formattazione
-  const formatAmount = (amount) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount);
-  };
-
-  const formatDate = (date) => {
-    return format(new Date(date), 'dd/MM/yyyy', { locale: it });
-  };
-
   const getCategoryInfo = (expense) => {
     // Se la categoria è già popolata (oggetto), usala direttamente
     if (expense.category && typeof expense.category === 'object') {
@@ -299,8 +280,17 @@ const ExpensesPage = () => {
     return category || { name: 'Sconosciuto', color: categoryColors.altro };
   };
 
+  // Determina la locale per i DatePicker
+  const datePickerLocale = settings.language === 'en' ? enUS : it;
+
+  // Simbolo valuta dalle impostazioni
+  const getCurrencySymbol = () => {
+    const symbols = { EUR: '€', USD: '$', GBP: '£' };
+    return symbols[settings.currency] || '€';
+  };
+
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={it}>
+    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={datePickerLocale}>
       <Box>
         {/* Header */}
         <Box sx={{ mb: 4 }}>
@@ -419,7 +409,7 @@ const ExpensesPage = () => {
                       value={filters.minAmount}
                       onChange={(e) => handleFilterChange('minAmount', e.target.value)}
                       InputProps={{
-                        startAdornment: <InputAdornment position="start">€</InputAdornment>,
+                        startAdornment: <InputAdornment position="start">{getCurrencySymbol()}</InputAdornment>,
                       }}
                     />
                   </Grid>
@@ -432,7 +422,7 @@ const ExpensesPage = () => {
                       value={filters.maxAmount}
                       onChange={(e) => handleFilterChange('maxAmount', e.target.value)}
                       InputProps={{
-                        startAdornment: <InputAdornment position="start">€</InputAdornment>,
+                        startAdornment: <InputAdornment position="start">{getCurrencySymbol()}</InputAdornment>,
                       }}
                     />
                   </Grid>
@@ -448,7 +438,7 @@ const ExpensesPage = () => {
                       </Button>
                       <Button
                         variant="outlined"
-                        startIcon={<FileDownloadOutlined />}
+                        startIcon={<RepeatOutlined />}
                         size="small"
                       >
                         Esporta CSV
@@ -477,37 +467,37 @@ const ExpensesPage = () => {
                   <TableSortLabel
                     active={sortBy === 'date'}
                     direction={sortBy === 'date' ? sortOrder : 'desc'}
-                    onClick={() => handleSort('date')}
-                  >
-                    Data
+                      onClick={() => handleSort('date')}
+                    >
+                      Data
                   </TableSortLabel>
                 </TableCell>
                 <TableCell>
                   <TableSortLabel
                     active={sortBy === 'description'}
                     direction={sortBy === 'description' ? sortOrder : 'asc'}
-                    onClick={() => handleSort('description')}
-                  >
-                    Descrizione
+                      onClick={() => handleSort('description')}
+                    >
+                      Descrizione
                   </TableSortLabel>
                 </TableCell>
                 <TableCell>
                   <TableSortLabel
                     active={sortBy === 'amount'}
                     direction={sortBy === 'amount' ? sortOrder : 'desc'}
-                    onClick={() => handleSort('amount')}
-                  >
-                    Importo
+                      onClick={() => handleSort('amount')}
+                    >
+                      Importo
                   </TableSortLabel>
                 </TableCell>
-                {!isMobile && (
+                  {!isMobile && (
                   <TableCell>
                     <TableSortLabel
                       active={sortBy === 'category'}
                       direction={sortBy === 'category' ? sortOrder : 'asc'}
-                      onClick={() => handleSort('category')}
-                    >
-                      Categoria
+                          onClick={() => handleSort('category')}
+                        >
+                          Categoria
                     </TableSortLabel>
                   </TableCell>
                 )}
@@ -516,9 +506,9 @@ const ExpensesPage = () => {
                     <TableSortLabel
                       active={sortBy === 'user'}
                       direction={sortBy === 'user' ? sortOrder : 'asc'}
-                      onClick={() => handleSort('user')}
-                    >
-                      Utente
+                          onClick={() => handleSort('user')}
+                        >
+                          Utente
                     </TableSortLabel>
                   </TableCell>
                 )}
@@ -549,9 +539,9 @@ const ExpensesPage = () => {
                 </TableRow>
               ) : (
                 filteredExpenses.map((expense) => {
-                  const categoryInfo = getCategoryInfo(expense);
-                  
-                  return (
+              const categoryInfo = getCategoryInfo(expense);
+              
+              return (
                     <TableRow key={expense._id} hover>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -589,43 +579,43 @@ const ExpensesPage = () => {
                       
                       <TableCell>
                         <Typography variant="body1" fontWeight="bold" color="error.main">
-                          {formatAmount(expense.amount)}
+                          {formatCurrency(expense.amount)}
                         </Typography>
                       </TableCell>
                       
                       {/* Categoria - nascosta su mobile */}
                       {!isMobile && (
                         <TableCell>
-                          <Chip
-                            label={categoryInfo.name}
-                            size="small"
-                            sx={{
-                              backgroundColor: categoryInfo.color,
-                              color: 'white',
-                            }}
-                          />
+                            <Chip
+                              label={categoryInfo.name}
+                              size="small"
+                              sx={{
+                                backgroundColor: categoryInfo.color,
+                                color: 'white',
+                              }}
+                            />
                         </TableCell>
                       )}
                       
                       {/* Utente - nascosto su mobile */}
                       {!isMobile && (
                         <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <PersonOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <PersonOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
                             <Typography variant="body2">
-                              {expense.userId?.name || 'Tu'}
-                            </Typography>
-                          </Box>
+                                {expense.userId?.name || 'Tu'}
+                              </Typography>
+                            </Box>
                         </TableCell>
                       )}
                       
                       <TableCell>
-                        <IconButton
-                          size="small"
-                          onClick={(e) => handleMenuOpen(e, expense)}
-                        >
-                          <MoreVertOutlined />
-                        </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleMenuOpen(e, expense)}
+                          >
+                            <MoreVertOutlined />
+                          </IconButton>
                       </TableCell>
                     </TableRow>
                   );
@@ -635,25 +625,25 @@ const ExpensesPage = () => {
           </Table>
         </TableContainer>
 
-        {/* Paginazione */}
-        {totalPages > 1 && (!filters.search || filters.search.length < 3) && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-            <Pagination
-              count={totalPages}
-              page={page}
-              onChange={(e, newPage) => setPage(newPage)}
-              color="primary"
-            />
-          </Box>
-        )}
+            {/* Paginazione */}
+            {totalPages > 1 && (!filters.search || filters.search.length < 3) && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                <Pagination
+                  count={totalPages}
+                  page={page}
+                  onChange={(e, newPage) => setPage(newPage)}
+                  color="primary"
+                />
+              </Box>
+            )}
 
-        {/* Messaggio quando si usa ricerca frontend */}
-        {filters.search && filters.search.length >= 3 && (
-          <Box sx={{ textAlign: 'center', mt: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              Mostrando {filteredExpenses.length} risultati per "{filters.search}"
-            </Typography>
-          </Box>
+            {/* Messaggio quando si usa ricerca frontend */}
+            {filters.search && filters.search.length >= 3 && (
+              <Box sx={{ textAlign: 'center', mt: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Mostrando {filteredExpenses.length} risultati per "{filters.search}"
+                </Typography>
+              </Box>
         )}
 
         {/* FAB per mobile */}

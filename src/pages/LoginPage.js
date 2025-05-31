@@ -33,22 +33,15 @@ const LoginPage = () => {
   // Redirect se già autenticato
   useEffect(() => {
     if (isAuthenticated) {
-      // Controlla se c'è un token di invito pendente E se l'utente arriva da un invito
-      const pendingToken = localStorage.getItem('pendingInviteToken');
-      if (pendingToken && isFromInvite) {
-        navigate(`/join-family/${pendingToken}`, { replace: true });
-        return;
-      }
-      
-      // Se non arriva da un invito, pulisci eventuali token pendenti e vai alla dashboard
-      if (!isFromInvite && pendingToken) {
-        localStorage.removeItem('pendingInviteToken');
-      }
-      
       const from = location.state?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate, isFromInvite]);
+  }, [isAuthenticated, navigate, location.state?.from?.pathname]);
+
+  // Pulisci errori quando il componente si monta
+  useEffect(() => {
+    clearError();
+  }, [clearError]);
 
   // Form setup
   const {
@@ -63,11 +56,6 @@ const LoginPage = () => {
       password: '',
     },
   });
-
-  // Pulisci errori quando il componente si monta
-  useEffect(() => {
-    clearError();
-  }, []); // Array vuoto - esegui solo al mount
 
   // Gestione submit
   const onSubmit = async (data) => {

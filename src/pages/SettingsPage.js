@@ -10,12 +10,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  FormControlLabel,
-  Divider,
   Button,
   Alert,
   Grid,
-  useTheme,
 } from '@mui/material';
 import {
   DarkModeOutlined,
@@ -29,11 +26,9 @@ import {
 import { useSettings } from '../contexts/SettingsContext';
 
 const SettingsPage = () => {
-  const theme = useTheme();
   const {
     settings,
     isDarkMode,
-    setTheme,
     setCurrency,
     setDateFormat,
     setLanguage,

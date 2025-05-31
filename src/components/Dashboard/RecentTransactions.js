@@ -18,9 +18,14 @@ import {
   TrendingUpOutlined,
   MoreVertOutlined,
 } from '@mui/icons-material';
-import { categoryColors } from '../../styles/theme';
 
-const RecentTransactions = ({ data, loading = false, title = "Transazioni del Mese" }) => {
+const RecentTransactions = ({ 
+  data, 
+  loading = false, 
+  title = "Transazioni del Mese",
+  formatCurrency,
+  formatDate: customFormatDate
+}) => {
   // Processa i dati dall'API
   const processTransactions = (apiData) => {
     if (!apiData || !Array.isArray(apiData)) return [];
@@ -57,14 +62,14 @@ const RecentTransactions = ({ data, loading = false, title = "Transazioni del Me
     );
   }
 
-  const formatDate = (date) => {
+  const defaultFormatDate = (date) => {
     return new Intl.DateTimeFormat('it-IT', {
       day: '2-digit',
       month: 'short',
     }).format(new Date(date));
   };
 
-  const formatAmount = (amount, type) => {
+  const defaultFormatAmount = (amount, type) => {
     const formatted = new Intl.NumberFormat('it-IT', {
       style: 'currency',
       currency: 'EUR',
@@ -72,6 +77,14 @@ const RecentTransactions = ({ data, loading = false, title = "Transazioni del Me
     
     return type === 'income' ? `+${formatted}` : `-${formatted}`;
   };
+
+  // Usa le funzioni personalizzate se fornite, altrimenti quelle di default
+  const dateFormatter = customFormatDate || defaultFormatDate;
+  const amountFormatter = formatCurrency ? 
+    (amount, type) => {
+      const formatted = formatCurrency(amount);
+      return type === 'income' ? `+${formatted}` : `-${formatted}`;
+    } : defaultFormatAmount;
 
   const getTransactionIcon = (type, category) => {
     if (type === 'income') {
@@ -184,7 +197,7 @@ const RecentTransactions = ({ data, loading = false, title = "Transazioni del Me
                         color={transaction.type === 'income' ? 'success.main' : 'error.main'}
                         component="span"
                       >
-                        {formatAmount(transaction.amount, transaction.type)}
+                        {amountFormatter(transaction.amount, transaction.type)}
                       </Typography>
                     </span>
                   }
@@ -208,7 +221,7 @@ const RecentTransactions = ({ data, loading = false, title = "Transazioni del Me
                         </Typography>
                       </span>
                       <Typography variant="caption" color="text.secondary" component="span">
-                        {formatDate(transaction.date)}
+                        {dateFormatter(transaction.date)}
                       </Typography>
                     </span>
                   }

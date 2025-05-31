@@ -2,17 +2,10 @@ import React, { useState, useCallback } from 'react';
 import {
   Box,
   Typography,
-  Grid,
   Card,
   CardContent,
-  CardHeader,
   Button,
   Avatar,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  ListItemSecondaryAction,
   IconButton,
   Dialog,
   DialogTitle,
@@ -26,8 +19,6 @@ import {
   Alert,
   CircularProgress,
   Menu,
-  Divider,
-  Paper,
   Tab,
   Tabs,
   Chip,
@@ -41,12 +32,11 @@ import {
   EditOutlined,
   RefreshOutlined,
   GroupOutlined,
-  BarChartOutlined,
-  SettingsOutlined,
   ExpandMoreOutlined,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { familyAPI } from '../services/api';
+import { useSettings } from '../contexts/SettingsContext';
 import MemberStats from '../components/MemberStats';
 import useApiCall from '../hooks/useApiCall';
 
@@ -55,7 +45,7 @@ const DEFAULT_AVATAR_URL = `https://res.cloudinary.com/dw1vq50a6/image/upload/v1
 
 const FamilyPage = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState(0);
+  const { formatDate } = useSettings();
   const [error, setError] = useState('');
   
   // Stati per dialoghi
@@ -225,11 +215,6 @@ const FamilyPage = () => {
       m.user._id === user.id || m.user._id === user._id
     );
     return member?.role === 'admin';
-  };
-
-  // Gestione cambio tab
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
   };
 
   // Gestione banner famiglia
@@ -476,18 +461,18 @@ const FamilyPage = () => {
                       }}
                     >
                       {!member.user.avatar && member.user.name.charAt(0).toUpperCase()}
-                    </Avatar>
+                          </Avatar>
                     <Box sx={{ flex: 1 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                         <Typography variant="h6" fontWeight="bold">
-                          {member.user.name}
+                                {member.user.name}
                         </Typography>
-                        {member.user._id === user?.id && (
+                              {member.user._id === user?.id && (
                           <Chip label="Tu" size="small" color="primary" />
-                        )}
+                              )}
                       </Box>
                       <Typography variant="body2" color="text.secondary">
-                        {member.user.email}
+                                {member.user.email}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -496,17 +481,17 @@ const FamilyPage = () => {
                           transform: expandedMembers.has(member.user._id) ? 'rotate(180deg)' : 'rotate(0deg)',
                           transition: 'transform 0.2s'
                         }} 
-                      />
-                      {isUserAdmin() && member.user._id !== user?.id && (
-                        <IconButton
+                        />
+                        {isUserAdmin() && member.user._id !== user?.id && (
+                            <IconButton
                           size="small"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleMemberMenuOpen(e, member);
                           }}
-                        >
-                          <MoreVertOutlined />
-                        </IconButton>
+                            >
+                              <MoreVertOutlined />
+                            </IconButton>
                       )}
                     </Box>
                   </Box>
@@ -522,7 +507,7 @@ const FamilyPage = () => {
                       📊 Clicca per statistiche
                     </Typography>
                   </Box>
-                </CardContent>
+              </CardContent>
                 
                 {/* Sezione Statistiche Espandibile */}
                 <Collapse in={expandedMembers.has(member.user._id)} timeout="auto" unmountOnExit>
@@ -544,7 +529,7 @@ const FamilyPage = () => {
                     <MemberStats memberId={member.user._id} memberName={member.user.name} />
                   </Box>
                 </Collapse>
-              </Card>
+            </Card>
             </Box>
           ))}
         </Box>
@@ -608,7 +593,7 @@ const FamilyPage = () => {
                               variant="outlined"
                             />
                             <Typography variant="caption" color="text.secondary">
-                              {new Date(invitation.createdAt).toLocaleDateString('it-IT')}
+                              {formatDate(invitation.createdAt)}
                             </Typography>
                           </Box>
                         </Box>
@@ -712,17 +697,6 @@ const FamilyPage = () => {
                   >
                     Lascia Famiglia
                   </Button>
-                  {isUserAdmin() && familyData?.members?.length === 1 && (
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      onClick={() => {
-                        console.log('Elimina famiglia');
-                      }}
-                    >
-                      Elimina Famiglia
-                    </Button>
-                  )}
         </Box>
         
         {(isUserAdmin() && familyData?.members?.length > 1) && (

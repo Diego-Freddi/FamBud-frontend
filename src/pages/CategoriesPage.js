@@ -24,25 +24,18 @@ import {
 } from '@mui/material';
 import {
   AddOutlined,
+  CategoryOutlined,
   MoreVertOutlined,
   EditOutlined,
   DeleteOutlined,
-  CategoryOutlined,
-  RefreshOutlined,
-  PaletteOutlined,
   BarChartOutlined,
-  DragIndicatorOutlined,
-  TrendingUpOutlined,
-  TrendingDownOutlined,
-  InfoOutlined,
+  RefreshOutlined,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
-import { it } from 'date-fns/locale';
 import { categoryAPI } from '../services/api';
 import CategoryForm from '../components/Categories/CategoryForm';
-import { categoryColors } from '../styles/theme';
 import useApiCall from '../hooks/useApiCall';
 import useWindowResize from '../hooks/useWindowResize';
+import { useSettings } from '../contexts/SettingsContext';
 
 // Mapping icone per compatibilità
 const ICON_MAP = {
@@ -69,11 +62,10 @@ const ICON_MAP = {
 };
 
 const CategoriesPage = () => {
-  // Hook per gestire il ridimensionamento della finestra
-  const windowSize = useWindowResize();
-  
+  const { formatCurrency } = useSettings();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const windowSize = useWindowResize();
   
   // Stati per form e modali
   const [formOpen, setFormOpen] = useState(false);
@@ -169,7 +161,7 @@ const CategoriesPage = () => {
     refetchAll();
     setFormOpen(false);
     setEditingCategory(null);
-  }, []);
+  }, [refetchAll]);
 
   // Menu azioni
   const handleMenuOpen = (event, category) => {
@@ -183,13 +175,6 @@ const CategoriesPage = () => {
   };
 
   // Formattazione
-  const formatAmount = (amount) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount);
-  };
-
   const getCategoryUsage = (categoryId) => {
     const categoryStats = stats.byCategory?.find(s => s._id === categoryId);
     return categoryStats || { totalAmount: 0, count: 0, percentage: 0 };
@@ -262,7 +247,7 @@ const CategoriesPage = () => {
                 <Grid item xs={6} md={3}>
                   <Box sx={{ textAlign: 'center' }}>
                     <Typography variant="h4" color="info.main" fontWeight="bold">
-                      {formatAmount(stats.total?.totalSpent || 0)}
+                      {formatCurrency(stats.total?.totalSpent || 0)}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Speso Totale
@@ -434,7 +419,7 @@ const CategoriesPage = () => {
                     }}>
                       <Box sx={{ flex: 1, textAlign: 'center' }}>
                         <Typography variant="h6" color="error.main" fontWeight="bold">
-                          {formatAmount(usage.totalAmount)}
+                          {formatCurrency(usage.totalAmount)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                           Speso

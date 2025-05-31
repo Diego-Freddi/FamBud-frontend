@@ -9,8 +9,11 @@ import {
 } from '@mui/material';
 import { expenseAPI, incomeAPI } from '../services/api';
 import useApiCall from '../hooks/useApiCall';
+import { useSettings } from '../contexts/SettingsContext';
 
 const MemberStats = ({ memberId, memberName }) => {
+  const { settings, formatCurrency } = useSettings();
+
   // Funzione API per statistiche membro
   const fetchMemberStats = useCallback(async () => {
     const currentDate = new Date();
@@ -56,13 +59,6 @@ const MemberStats = ({ memberId, memberName }) => {
     balance: 0
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
-  };
-
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
@@ -85,7 +81,7 @@ const MemberStats = ({ memberId, memberName }) => {
   return (
     <Box>
       <Typography variant="body2" color="text.secondary" textAlign="center" gutterBottom>
-        Statistiche di {memberName} - {new Date().toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })}
+        Statistiche di {memberName} - {new Intl.DateTimeFormat(settings.language === 'en' ? 'en-US' : 'it-IT', { month: 'long', year: 'numeric' }).format(new Date())}
       </Typography>
       
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>

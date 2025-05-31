@@ -22,10 +22,26 @@ import useWindowResize from '../../hooks/useWindowResize';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const ExpensesPieChart = ({ data, loading = false, title = "Spese per Categoria" }) => {
+const ExpensesPieChart = ({ 
+  data, 
+  loading = false, 
+  title = "Spese per Categoria",
+  formatCurrency
+}) => {
   // Hook per gestire il ridimensionamento della finestra
   const windowSize = useWindowResize();
   
+  // Funzione di formattazione di default
+  const defaultFormatCurrency = (amount) => {
+    return new Intl.NumberFormat('it-IT', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(amount);
+  };
+
+  // Usa la funzione personalizzata se fornita, altrimenti quella di default
+  const currencyFormatter = formatCurrency || defaultFormatCurrency;
+
   // Processa i dati dall'API usando i colori reali delle categorie
   const processChartData = (apiData) => {
     if (!apiData || !Array.isArray(apiData)) return [];
@@ -94,7 +110,7 @@ const ExpensesPieChart = ({ data, loading = false, title = "Spese per Categoria"
             const value = context.parsed;
             const total = context.dataset.data.reduce((a, b) => a + b, 0);
             const percentage = ((value / total) * 100).toFixed(1);
-            return `€${value.toFixed(2)} (${percentage}%)`;
+            return `${currencyFormatter(value)} (${percentage}%)`;
           },
         },
       },
@@ -127,7 +143,7 @@ const ExpensesPieChart = ({ data, loading = false, title = "Spese per Categoria"
     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <CardHeader 
         title={title}
-        subheader={`Totale: €${total.toFixed(2)}`}
+        subheader={`Totale: ${currencyFormatter(total)}`}
       />
       <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <Box sx={{ display: 'flex', gap: 2, flex: 1, minHeight: 300 }}>
@@ -165,7 +181,7 @@ const ExpensesPieChart = ({ data, loading = false, title = "Spese per Categoria"
                       }
                       secondary={
                         <Typography variant="caption" color="text.secondary" component="span">
-                          €{item.amount.toFixed(2)} ({percentage}%)
+                          {currencyFormatter(item.amount)} ({percentage}%)
                         </Typography>
                       }
                     />

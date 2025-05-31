@@ -20,7 +20,12 @@ import {
   InfoOutlined,
 } from '@mui/icons-material';
 
-const BudgetAlerts = ({ data, loading = false, title = "Stato Budget" }) => {
+const BudgetAlerts = ({ 
+  data, 
+  loading = false, 
+  title = "Stato Budget",
+  formatCurrency
+}) => {
   // Processa i dati dall'API
   const processBudgets = (apiData) => {
     if (!apiData || !Array.isArray(apiData)) return [];
@@ -80,18 +85,6 @@ const BudgetAlerts = ({ data, loading = false, title = "Stato Budget" }) => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'safe':
-        return 'success';
-      case 'warning':
-        return 'warning';
-      case 'exceeded':
-        return 'error';
-      default:
-        return 'info';
-    }
-  };
 
   const getStatusText = (status, percentage) => {
     switch (status) {
@@ -119,12 +112,15 @@ const BudgetAlerts = ({ data, loading = false, title = "Stato Budget" }) => {
     }
   };
 
-  const formatAmount = (amount) => {
+  const defaultFormatAmount = (amount) => {
     return new Intl.NumberFormat('it-IT', {
       style: 'currency',
       currency: 'EUR',
     }).format(amount);
   };
+
+  // Usa la funzione personalizzata se fornita, altrimenti quella di default
+  const amountFormatter = formatCurrency || defaultFormatAmount;
 
   // Calcola statistiche generali
   const totalBudget = budgets.reduce((sum, budget) => sum + budget.budgetAmount, 0);
@@ -164,7 +160,7 @@ const BudgetAlerts = ({ data, loading = false, title = "Stato Budget" }) => {
       }}>
         <CardHeader 
           title={title}
-          subheader={`Budget totale: ${formatAmount(totalBudget)} (${overallPercentage}% utilizzato)`}
+          subheader={`Budget totale: ${amountFormatter(totalBudget)} (${overallPercentage}% utilizzato)`}
         />
         <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           {/* Avvisi generali */}
@@ -226,10 +222,10 @@ const BudgetAlerts = ({ data, loading = false, title = "Stato Budget" }) => {
                     <span>
                       <span style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                         <Typography variant="caption" color="text.secondary" component="span">
-                          {formatAmount(budget.spentAmount)} di {formatAmount(budget.budgetAmount)}
+                          {amountFormatter(budget.spentAmount)} di {amountFormatter(budget.budgetAmount)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary" component="span">
-                          Rimanenti: {formatAmount(budget.budgetAmount - budget.spentAmount)}
+                          Rimanenti: {amountFormatter(budget.budgetAmount - budget.spentAmount)}
                         </Typography>
                       </span>
                       <LinearProgress

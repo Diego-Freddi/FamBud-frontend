@@ -26,8 +26,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  FormControlLabel,
-  Switch,
   Table,
   TableBody,
   TableCell,
@@ -39,33 +37,30 @@ import {
 } from '@mui/material';
 import {
   AddOutlined,
-  FilterListOutlined,
-  SearchOutlined,
+  TrendingUpOutlined,
   MoreVertOutlined,
   EditOutlined,
   DeleteOutlined,
-  TrendingUpOutlined,
-  CalendarTodayOutlined,
-  EuroOutlined,
-  BusinessOutlined,
-  PersonOutlined,
+  FilterListOutlined,
+  SearchOutlined,
   RefreshOutlined,
-  FileDownloadOutlined,
-  SortOutlined,
+  CalendarTodayOutlined,
+  AttachMoneyOutlined,
   RepeatOutlined,
-  ArrowUpwardOutlined,
-  ArrowDownwardOutlined,
+  BusinessOutlined,
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { it } from 'date-fns/locale';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { it, enUS } from 'date-fns/locale';
+import { startOfMonth, endOfMonth } from 'date-fns';
 import { incomeAPI } from '../services/api';
 import IncomeForm from '../components/Incomes/IncomeForm';
 import useApiCall from '../hooks/useApiCall';
+import { useSettings } from '../contexts/SettingsContext';
 
 const IncomesPage = () => {
+  const { settings, formatCurrency, formatDate } = useSettings();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
@@ -102,15 +97,9 @@ const IncomesPage = () => {
     const serverSortFields = ['date', 'description', 'amount'];
     const useServerSort = serverSortFields.includes(sortBy);
     
-    // Se la ricerca è < 3 caratteri, non inviare il parametro search al backend
-    // Così il backend restituisce tutti i risultati e il frontend fa la ricerca estesa
-    const useBackendSearch = filters.search && filters.search.length >= 3;
-    
     return {
       page,
       limit: 10,
-      // Non inviare search al backend se facciamo ricerca frontend
-      search: useBackendSearch ? undefined : undefined,
       source: filters.source === 'all' ? undefined : filters.source,
       startDate: filters.startDate ? filters.startDate.toISOString() : undefined,
       endDate: filters.endDate ? filters.endDate.toISOString() : undefined,
@@ -132,13 +121,12 @@ const IncomesPage = () => {
   const { data: incomesResponse, loading: incomesLoading, error: incomesError, refetch: refetchIncomes } = useApiCall(fetchIncomes, [apiParams]);
 
   // Estraggo i dati dalla risposta
-  const incomes = incomesResponse?.data?.incomes || [];
   const pagination = incomesResponse?.data?.pagination || {};
   const totalPages = pagination.pages || 1;
   const totalIncomes = pagination.total || 0;
 
   // Fonti comuni per il filtro
-  const commonSources = [
+  const commonSources = useMemo(() => [
     { value: 'salary', label: 'Stipendio' },
     { value: 'freelance', label: 'Freelance' },
     { value: 'bonus', label: 'Bonus' },
@@ -147,16 +135,18 @@ const IncomesPage = () => {
     { value: 'gift', label: 'Regalo' },
     { value: 'refund', label: 'Rimborso' },
     { value: 'other', label: 'Altro' },
-  ];
+  ], []);
 
   // Funzione per ottenere il label della fonte
-  const getSourceLabel = (sourceValue) => {
+  const getSourceLabel = useCallback((sourceValue) => {
     const source = commonSources.find(s => s.value === sourceValue);
     return source ? source.label : sourceValue;
-  };
+  }, [commonSources]);
 
   // Funzione per ordinamento locale (per campi popolati come utente)
   const sortIncomesLocally = useMemo(() => {
+    const incomes = incomesResponse?.data?.incomes || [];
+    
     if (!incomes.length) return incomes;
     
     // Solo per ordinamenti locali (utente e fonte)
@@ -181,7 +171,7 @@ const IncomesPage = () => {
     
     // Per altri ordinamenti, usa i dati dal server
     return incomes;
-  }, [incomes, sortBy, sortOrder, getSourceLabel]);
+  }, [incomesResponse?.data?.incomes, sortBy, sortOrder, getSourceLabel]);
 
   // Funzione per filtrare localmente per ricerca estesa (utente e fonte)
   const filteredIncomes = useMemo(() => {
@@ -287,17 +277,6 @@ const IncomesPage = () => {
   };
 
   // Formattazione
-  const formatAmount = (amount) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount);
-  };
-
-  const formatDate = (date) => {
-    return format(new Date(date), 'dd/MM/yyyy', { locale: it });
-  };
-
   const getRecurringLabel = (income) => {
     if (!income.isRecurring) return null;
     
@@ -312,8 +291,17 @@ const IncomesPage = () => {
     return typeLabels[income.recurringPattern?.frequency] || 'Ricorrente';
   };
 
+  // Determina la locale per i DatePicker
+  const datePickerLocale = settings.language === 'en' ? enUS : it;
+
+  // Simbolo valuta dalle impostazioni
+  const getCurrencySymbol = () => {
+    const symbols = { EUR: '€', USD: '$', GBP: '£' };
+    return symbols[settings.currency] || '€';
+  };
+
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={it}>
+    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={datePickerLocale}>
       <Box>
         {/* Header */}
         <Box sx={{ mb: 4 }}>
@@ -439,7 +427,7 @@ const IncomesPage = () => {
                       value={filters.minAmount}
                       onChange={(e) => handleFilterChange('minAmount', e.target.value)}
                       InputProps={{
-                        startAdornment: <InputAdornment position="start">€</InputAdornment>,
+                        startAdornment: <InputAdornment position="start">{getCurrencySymbol()}</InputAdornment>,
                       }}
                     />
                   </Grid>
@@ -452,7 +440,7 @@ const IncomesPage = () => {
                       value={filters.maxAmount}
                       onChange={(e) => handleFilterChange('maxAmount', e.target.value)}
                       InputProps={{
-                        startAdornment: <InputAdornment position="start">€</InputAdornment>,
+                        startAdornment: <InputAdornment position="start">{getCurrencySymbol()}</InputAdornment>,
                       }}
                     />
                   </Grid>
@@ -468,7 +456,7 @@ const IncomesPage = () => {
                       </Button>
                       <Button
                         variant="outlined"
-                        startIcon={<FileDownloadOutlined />}
+                        startIcon={<AttachMoneyOutlined />}
                         size="small"
                       >
                         Esporta CSV
@@ -493,7 +481,7 @@ const IncomesPage = () => {
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress />
           </Box>
-        ) : incomes.length === 0 ? (
+        ) : filteredIncomes.length === 0 ? (
           <Card>
             <CardContent sx={{ textAlign: 'center', py: 6 }}>
               <TrendingUpOutlined sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
@@ -526,30 +514,30 @@ const IncomesPage = () => {
                       <TableSortLabel
                         active={sortBy === 'date'}
                         direction={sortBy === 'date' ? sortOrder : 'desc'}
-                        onClick={() => handleSort('date')}
-                      >
-                        Data
+                      onClick={() => handleSort('date')}
+                    >
+                      Data
                       </TableSortLabel>
                     </TableCell>
                     <TableCell>
                       <TableSortLabel
                         active={sortBy === 'description'}
                         direction={sortBy === 'description' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('description')}
-                      >
-                        Descrizione
+                      onClick={() => handleSort('description')}
+                    >
+                      Descrizione
                       </TableSortLabel>
                     </TableCell>
                     <TableCell>
                       <TableSortLabel
                         active={sortBy === 'amount'}
                         direction={sortBy === 'amount' ? sortOrder : 'desc'}
-                        onClick={() => handleSort('amount')}
-                      >
-                        Importo
+                      onClick={() => handleSort('amount')}
+                    >
+                      Importo
                       </TableSortLabel>
                     </TableCell>
-                    {!isMobile && (
+                  {!isMobile && (
                       <TableCell>
                         <TableSortLabel
                           active={sortBy === 'source'}
@@ -598,97 +586,97 @@ const IncomesPage = () => {
                     </TableRow>
                   ) : (
                     filteredIncomes.map((income) => {
-                      const recurringLabel = getRecurringLabel(income);
-                      
-                      return (
+              const recurringLabel = getRecurringLabel(income);
+              
+              return (
                         <TableRow key={income._id} hover>
                           <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <CalendarTodayOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
-                              <Typography variant="body2">
-                                {formatDate(income.date)}
-                              </Typography>
-                            </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <CalendarTodayOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
+                          <Typography variant="body2">
+                            {formatDate(income.date)}
+                          </Typography>
+                        </Box>
                           </TableCell>
-                          
+                      
                           <TableCell>
-                            <Typography variant="body1" fontWeight="medium">
-                              {income.description}
-                            </Typography>
+                        <Typography variant="body1" fontWeight="medium">
+                          {income.description}
+                        </Typography>
                             {income.notes && (
                               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                                 {income.notes}
                               </Typography>
                             )}
                             {/* Su mobile, mostra fonte e tipo sotto la descrizione */}
-                            {isMobile && (
+                                                 {isMobile && (
                               <Box sx={{ mt: 1 }}>
-                                <Chip
-                                  label={getSourceLabel(income.source)}
-                                  size="small"
-                                  color="primary"
-                                  variant="outlined"
+                             <Chip
+                               label={getSourceLabel(income.source)}
+                               size="small"
+                               color="primary"
+                               variant="outlined"
                                   sx={{ mr: 1 }}
-                                />
-                                {recurringLabel && (
-                                  <Chip
-                                    label={recurringLabel}
-                                    size="small"
-                                    color="success"
-                                    variant="outlined"
-                                    icon={<RepeatOutlined />}
-                                  />
-                                )}
-                              </Box>
+                             />
+                            {recurringLabel && (
+                              <Chip
+                                label={recurringLabel}
+                                size="small"
+                                color="success"
+                                variant="outlined"
+                                icon={<RepeatOutlined />}
+                              />
                             )}
+                          </Box>
+                        )}
                           </TableCell>
-                          
+                      
                           <TableCell>
-                            <Typography variant="body1" fontWeight="bold" color="success.main">
-                              +{formatAmount(income.amount)}
-                            </Typography>
+                          <Typography variant="body1" fontWeight="bold" color="success.main">
+                           +{formatCurrency(income.amount)}
+                          </Typography>
                           </TableCell>
-                          
+                      
                           {/* Fonte - nascosta su mobile */}
-                          {!isMobile && (
+                      {!isMobile && (
                             <TableCell>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <BusinessOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
-                                <Typography variant="body2">
-                                  {getSourceLabel(income.source)}
-                                </Typography>
-                              </Box>
+                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                               <BusinessOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
+                               <Typography variant="body2">
+                                 {getSourceLabel(income.source)}
+                               </Typography>
+                             </Box>
                             </TableCell>
                           )}
                           
                           {/* Tipo - nascosto su mobile */}
                           {!isMobile && (
                             <TableCell>
-                              {recurringLabel ? (
-                                <Chip
-                                  label={recurringLabel}
-                                  size="small"
-                                  color="success"
-                                  variant="outlined"
-                                  icon={<RepeatOutlined />}
-                                />
-                              ) : (
-                                <Chip
-                                  label="Singola"
-                                  size="small"
-                                  variant="outlined"
-                                />
-                              )}
+                            {recurringLabel ? (
+                              <Chip
+                                label={recurringLabel}
+                                size="small"
+                                color="success"
+                                variant="outlined"
+                                icon={<RepeatOutlined />}
+                              />
+                            ) : (
+                              <Chip
+                                label="Singola"
+                                size="small"
+                                variant="outlined"
+                              />
+                            )}
                             </TableCell>
-                          )}
-                          
+                      )}
+                      
                           <TableCell>
-                            <IconButton
-                              size="small"
-                              onClick={(e) => handleMenuOpen(e, income)}
-                            >
-                              <MoreVertOutlined />
-                            </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleMenuOpen(e, income)}
+                          >
+                            <MoreVertOutlined />
+                          </IconButton>
                           </TableCell>
                         </TableRow>
                       );

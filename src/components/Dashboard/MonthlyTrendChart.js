@@ -28,10 +28,26 @@ ChartJS.register(
   Legend
 );
 
-const MonthlyTrendChart = ({ data, loading = false, title = "Andamento Mensile" }) => {
+const MonthlyTrendChart = ({ 
+  data, 
+  loading = false, 
+  title = "Andamento Mensile",
+  formatCurrency
+}) => {
   // Hook per gestire il ridimensionamento della finestra
   const windowSize = useWindowResize();
   
+  // Funzione di formattazione di default
+  const defaultFormatCurrency = (amount) => {
+    return new Intl.NumberFormat('it-IT', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(amount);
+  };
+
+  // Usa la funzione personalizzata se fornita, altrimenti quella di default
+  const currencyFormatter = formatCurrency || defaultFormatCurrency;
+
   // Se non ci sono dati e non stiamo caricando, mostra messaggio
   if (!loading && (!data || !data.labels || data.labels.length === 0)) {
     return (
@@ -93,7 +109,7 @@ const MonthlyTrendChart = ({ data, loading = false, title = "Andamento Mensile" 
       tooltip: {
         callbacks: {
           label: function(context) {
-            return `${context.dataset.label}: €${context.parsed.y.toFixed(2)}`;
+            return `${context.dataset.label}: ${currencyFormatter(context.parsed.y)}`;
           },
         },
       },
@@ -108,7 +124,7 @@ const MonthlyTrendChart = ({ data, loading = false, title = "Andamento Mensile" 
         beginAtZero: true,
         ticks: {
           callback: function(value) {
-            return '€' + value;
+            return currencyFormatter(value);
           },
         },
       },

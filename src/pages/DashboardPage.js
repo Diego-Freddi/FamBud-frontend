@@ -11,29 +11,25 @@ import {
   Button,
   Card,
   CardContent,
-  TextField,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  InputAdornment,
 } from '@mui/material';
 import {
-  AddOutlined,
   AccountBalanceWalletOutlined,
   TrendingUpOutlined,
   ReceiptOutlined,
   SavingsOutlined,
   RefreshOutlined,
   FilterListOutlined,
-  SearchOutlined,
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { it } from 'date-fns/locale';
-import { useNavigate } from 'react-router-dom';
+import { it, enUS } from 'date-fns/locale';
 import { useAuth } from '../contexts/AuthContext';
+import { useSettings } from '../contexts/SettingsContext';
 import StatsCard from '../components/Dashboard/StatsCard';
 import ExpensesPieChart from '../components/Dashboard/ExpensesPieChart';
 import MonthlyTrendChart from '../components/Dashboard/MonthlyTrendChart';
@@ -47,16 +43,34 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050/api
 
 const DashboardPage = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const { settings, formatCurrency, formatDate } = useSettings();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
-  // Stati per filtri
+  // Calcola le date di default basate sulle impostazioni
+  const getDefaultDates = () => {
+    const now = new Date();
+    
+    if (settings.dashboardDefault === 'all-time') {
+      // Dall'inizio: nessuna data di inizio, fine = oggi
+      return {
+        startDate: null,
+        endDate: now,
+      };
+    } else {
+      // Mese corrente (default)
+      return {
+        startDate: new Date(now.getFullYear(), now.getMonth(), 1),
+        endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0),
+      };
+    }
+  };
+  
+  // Stati per filtri con default basato su impostazioni
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     userId: 'all', // 'all' per tutti i membri
-    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1), // Primo giorno del mese corrente
-    endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0), // Ultimo giorno del mese corrente
+    ...getDefaultDates(),
   });
 
   // Parametri API stabilizzati per evitare loop infiniti
@@ -109,8 +123,7 @@ const DashboardPage = () => {
   const clearFilters = () => {
     setFilters({
       userId: 'all',
-      startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-      endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
+      ...getDefaultDates(),
     });
   };
 
@@ -175,23 +188,25 @@ const DashboardPage = () => {
       new Date(appliedFilters.endDate).getTime() === currentMonthEnd.getTime();
     
     if (isCurrentMonth || (!appliedFilters?.isFiltered && !appliedFilters?.startDate && !appliedFilters?.endDate)) {
-      const monthName = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' }).format(now);
+      const locale = settings.language === 'en' ? 'en-US' : 'it-IT';
+      const monthName = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(now);
       return `${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`;
     }
     
     let periodText = '';
+    const locale = settings.language === 'en' ? 'en-US' : 'it-IT';
     if (appliedFilters?.startDate && appliedFilters?.endDate) {
-      const start = new Date(appliedFilters.startDate).toLocaleDateString('it-IT');
-      const end = new Date(appliedFilters.endDate).toLocaleDateString('it-IT');
-      periodText = `Dal ${start} al ${end}`;
+      const start = new Date(appliedFilters.startDate).toLocaleDateString(locale);
+      const end = new Date(appliedFilters.endDate).toLocaleDateString(locale);
+      periodText = settings.language === 'en' ? `From ${start} to ${end}` : `Dal ${start} al ${end}`;
     } else if (appliedFilters?.startDate) {
-      const start = new Date(appliedFilters.startDate).toLocaleDateString('it-IT');
-      periodText = `Dal ${start} ad oggi`;
+      const start = new Date(appliedFilters.startDate).toLocaleDateString(locale);
+      periodText = settings.language === 'en' ? `From ${start} to today` : `Dal ${start} ad oggi`;
     } else if (appliedFilters?.endDate) {
-      const end = new Date(appliedFilters.endDate).toLocaleDateString('it-IT');
-      periodText = `Dall'inizio al ${end}`;
+      const end = new Date(appliedFilters.endDate).toLocaleDateString(locale);
+      periodText = settings.language === 'en' ? `From beginning to ${end}` : `Dall'inizio al ${end}`;
     } else {
-      periodText = 'Mese corrente';
+      periodText = settings.language === 'en' ? 'Current month' : 'Mese corrente';
     }
     
     // Aggiungi info utente se filtrato
@@ -204,6 +219,9 @@ const DashboardPage = () => {
     
     return periodText;
   };
+
+  // Determina la locale per i DatePicker
+  const datePickerLocale = settings.language === 'en' ? enUS : it;
 
   // Gestione errori
   if (error) {
@@ -251,27 +269,27 @@ const DashboardPage = () => {
   }
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={it}>
+    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={datePickerLocale}>
+    <Box sx={{ 
+      display: 'flex', 
+      justifyContent: 'center',
+      width: '100%'
+    }}>
       <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'center',
-        width: '100%'
+        width: '100%',
+        px: { xs: 0, sm: 2 }
       }}>
-        <Box sx={{ 
-          width: '100%',
-          px: { xs: 0, sm: 2 }
-        }}>
-          {/* Header della dashboard */}
-          <Box sx={{ mb: 4 }}>
+        {/* Header della dashboard */}
+        <Box sx={{ mb: 4 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Box>
-                <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-                  Dashboard
-                </Typography>
-                <Typography variant="subtitle1" color="text.secondary">
+            <Box>
+              <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+                Dashboard
+              </Typography>
+              <Typography variant="subtitle1" color="text.secondary">
                   Benvenuto, {user?.name}! Ecco un riepilogo delle tue finanze {getPeriodText()}.
-                </Typography>
-              </Box>
+              </Typography>
+            </Box>
               
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <Button
@@ -294,22 +312,22 @@ const DashboardPage = () => {
                     />
                   )}
                 </Button>
-                <Fab
-                  size="small"
-                  color="primary"
-                  onClick={refetch}
-                  disabled={loading}
-                  sx={{ 
-                    opacity: loading ? 0.5 : 1,
-                    '&:hover': {
-                      transform: 'scale(1.1)',
-                    }
-                  }}
-                  title="Aggiorna dati"
-                >
-                  <RefreshOutlined />
-                </Fab>
-              </Box>
+            <Fab
+              size="small"
+              color="primary"
+              onClick={refetch}
+              disabled={loading}
+              sx={{ 
+                opacity: loading ? 0.5 : 1,
+                '&:hover': {
+                  transform: 'scale(1.1)',
+                }
+              }}
+              title="Aggiorna dati"
+            >
+              <RefreshOutlined />
+            </Fab>
+          </Box>
             </Box>
 
             {/* Sezione Filtri */}
@@ -407,110 +425,119 @@ const DashboardPage = () => {
                 </CardContent>
               </Card>
             )}
-          </Box>
+        </Box>
 
-          {/* Cards delle statistiche principali */}
-          <Box sx={{ 
-            display: 'flex', 
-            gap: 3, 
-            width: '100%',
-            flexDirection: { xs: 'column', sm: 'row' },
-            flexWrap: 'wrap',
-            mb: 4
-          }}>
-            <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
-              <StatsCard
-                title="Saldo Corrente"
-                value={dashboardData.stats?.balance || 0}
-                subtitle="Disponibile"
-                icon={<AccountBalanceWalletOutlined />}
-                color="primary"
-                loading={loading}
-              />
-            </Box>
-            
-            <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
-              <StatsCard
+        {/* Cards delle statistiche principali */}
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 3, 
+          width: '100%',
+          flexDirection: { xs: 'column', sm: 'row' },
+          flexWrap: 'wrap',
+          mb: 4
+        }}>
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
+            <StatsCard
+              title="Saldo Corrente"
+              value={dashboardData.stats?.balance || 0}
+              subtitle="Disponibile"
+              icon={<AccountBalanceWalletOutlined />}
+              color="primary"
+              loading={loading}
+                formatValue={formatCurrency}
+            />
+          </Box>
+          
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
+            <StatsCard
                 title="Entrate Totali"
-                value={dashboardData.stats?.monthlyIncome || 0}
+              value={dashboardData.stats?.monthlyIncome || 0}
                 subtitle={getPeriodText()}
-                icon={<TrendingUpOutlined />}
-                color="success"
-                loading={loading}
-              />
-            </Box>
-            
-            <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
-              <StatsCard
+              icon={<TrendingUpOutlined />}
+              color="success"
+              loading={loading}
+                formatValue={formatCurrency}
+            />
+          </Box>
+          
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
+            <StatsCard
                 title="Spese Totali"
-                value={dashboardData.stats?.monthlyExpenses || 0}
+              value={dashboardData.stats?.monthlyExpenses || 0}
                 subtitle={getPeriodText()}
-                icon={<ReceiptOutlined />}
-                color="error"
-                loading={loading}
-              />
-            </Box>
-            
-            <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
-              <StatsCard
-                title="Risparmi"
-                value={dashboardData.stats?.savings || 0}
-                subtitle="Totale accumulato"
-                icon={<SavingsOutlined />}
-                color="info"
-                loading={loading}
-              />
-            </Box>
+              icon={<ReceiptOutlined />}
+              color="error"
+              loading={loading}
+                formatValue={formatCurrency}
+            />
           </Box>
-
-          {/* Grafici e contenuti principali */}
-          <Box sx={{ 
-            display: 'flex', 
-            gap: 3, 
-            width: '100%',
-            flexDirection: { xs: 'column', lg: 'row' },
-            alignItems: 'stretch',
-            mb: 4
-          }}>
-            {/* Grafico spese per categoria */}
-            <Box sx={{ flex: 1, width: '100%' }}>
-              <ExpensesPieChart 
-                data={dashboardData.expensesByCategory}
-                loading={loading}
-              />
-            </Box>
-            
-            {/* Andamento mensile */}
-            <Box sx={{ flex: 1, width: '100%' }}>
-              <MonthlyTrendChart 
-                data={dashboardData.monthlyTrend}
-                loading={loading}
-              />
-            </Box>
+          
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
+            <StatsCard
+              title="Risparmi"
+              value={dashboardData.stats?.savings || 0}
+              subtitle="Totale accumulato"
+              icon={<SavingsOutlined />}
+              color="info"
+              loading={loading}
+                formatValue={formatCurrency}
+            />
           </Box>
+        </Box>
 
-          {/* Sezione inferiore */}
-          <Box sx={{ 
-            display: 'flex', 
-            gap: 3, 
-            width: '100%',
-            flexDirection: { xs: 'column', lg: 'row' },
-            alignItems: 'stretch'
-          }}>
-            {/* Ultime transazioni */}
-            <Box sx={{ flex: 1, width: '100%' }}>
-              <RecentTransactions 
-                data={dashboardData.recentTransactions}
-                loading={loading}
-              />
-            </Box>
-            
-            {/* Avvisi budget */}
-            <Box sx={{ flex: 1, width: '100%' }}>
-              <BudgetAlerts 
-                data={dashboardData.budgetAlerts}
-                loading={loading}
-              />
+        {/* Grafici e contenuti principali */}
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 3, 
+          width: '100%',
+          flexDirection: { xs: 'column', lg: 'row' },
+          alignItems: 'stretch',
+          mb: 4
+        }}>
+          {/* Grafico spese per categoria */}
+          <Box sx={{ flex: 1, width: '100%' }}>
+            <ExpensesPieChart 
+              data={dashboardData.expensesByCategory}
+              loading={loading}
+                formatCurrency={formatCurrency}
+            />
+          </Box>
+          
+          {/* Andamento mensile */}
+          <Box sx={{ flex: 1, width: '100%' }}>
+            <MonthlyTrendChart 
+              data={dashboardData.monthlyTrend}
+              loading={loading}
+                formatCurrency={formatCurrency}
+            />
+          </Box>
+        </Box>
+
+        {/* Sezione inferiore */}
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 3, 
+          width: '100%',
+          flexDirection: { xs: 'column', lg: 'row' },
+          alignItems: 'stretch'
+        }}>
+          {/* Ultime transazioni */}
+          <Box sx={{ flex: 1, width: '100%' }}>
+            <RecentTransactions 
+              data={dashboardData.recentTransactions}
+              loading={loading}
+                formatCurrency={formatCurrency}
+                formatDate={formatDate}
+            />
+          </Box>
+          
+          {/* Avvisi budget */}
+          <Box sx={{ flex: 1, width: '100%' }}>
+            <BudgetAlerts 
+              data={dashboardData.budgetAlerts}
+              loading={loading}
+                formatCurrency={formatCurrency}
+            />
             </Box>
           </Box>
         </Box>

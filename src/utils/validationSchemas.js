@@ -36,9 +36,9 @@ export const registerSchema = yup.object({
     .oneOf([yup.ref('password')], 'Le password non coincidono'),
   familyName: yup
     .string()
-    .required('Il nome della famiglia è obbligatorio')
-    .min(2, 'Il nome famiglia deve avere almeno 2 caratteri')
-    .max(50, 'Il nome famiglia non può superare i 50 caratteri'),
+        .required('Il nome della famiglia è obbligatorio')
+        .min(2, 'Il nome famiglia deve avere almeno 2 caratteri')
+        .max(50, 'Il nome famiglia non può superare i 50 caratteri'),
   createFamily: yup.boolean(),
 });
 
@@ -266,7 +266,7 @@ export const changePasswordSchema = yup.object({
     .oneOf([yup.ref('newPassword')], 'Le password non coincidono'),
 });
 
-export default {
+const validationSchemas = {
   loginSchema,
   registerSchema,
   forgotPasswordSchema,
@@ -280,4 +280,6 @@ export default {
   budgetSchema,
   profileSchema,
   changePasswordSchema,
-}; 
+};
+
+export default validationSchemas; 

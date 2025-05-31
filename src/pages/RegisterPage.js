@@ -13,8 +13,6 @@ import {
   CircularProgress,
   Divider,
   Link as MuiLink,
-  FormControlLabel,
-  Checkbox,
 } from '@mui/material';
 import { PersonAddOutlined, FamilyRestroomOutlined } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
@@ -61,7 +59,6 @@ const RegisterPage = () => {
     register,
     handleSubmit,
     formState: { errors },
-    watch,
     setError,
   } = useForm({
     resolver: yupResolver(registerSchema),
@@ -75,12 +72,10 @@ const RegisterPage = () => {
     },
   });
 
-  const watchCreateFamily = watch('createFamily');
-
   // Pulisci errori quando il componente si monta
   useEffect(() => {
     clearError();
-  }, []); // Array vuoto - esegui solo al mount
+  }, [clearError]);
 
   // Gestione submit
   const onSubmit = async (data) => {

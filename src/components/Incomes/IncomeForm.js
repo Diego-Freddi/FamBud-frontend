@@ -23,11 +23,12 @@ import {
   FormControlLabel,
   Switch,
   Collapse,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   SaveOutlined,
   CloseOutlined,
-  EuroOutlined,
   CalendarTodayOutlined,
   DescriptionOutlined,
   TrendingUpOutlined,
@@ -37,9 +38,10 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { it } from 'date-fns/locale';
+import { it, enUS } from 'date-fns/locale';
 import { incomeSchema } from '../../utils/validationSchemas';
 import { incomeAPI } from '../../services/api';
+import { useSettings } from '../../contexts/SettingsContext';
 
 const IncomeForm = ({ 
   open, 
@@ -47,11 +49,20 @@ const IncomeForm = ({
   income = null, 
   onSuccess 
 }) => {
+  const { settings } = useSettings();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isEdit = Boolean(income);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState('');
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
+
+  // Simbolo valuta dalle impostazioni
+  const getCurrencySymbol = () => {
+    const symbols = { EUR: '€', USD: '$', GBP: '£' };
+    return symbols[settings.currency] || '€';
+  };
 
   // Setup form
   const {
@@ -193,17 +204,15 @@ const IncomeForm = ({
   ];
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={it}>
+    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={settings.language === 'en' ? enUS : it}>
       <Dialog 
         open={open} 
         onClose={onClose} 
         maxWidth="md" 
         fullWidth
-        PaperProps={{
-          sx: { borderRadius: 2 }
-        }}
+        fullScreen={isMobile}
       >
-        <DialogTitle>
+        <DialogTitle sx={{ pb: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <TrendingUpOutlined color="primary" />
             <Typography variant="h6">
@@ -222,7 +231,7 @@ const IncomeForm = ({
 
             <Grid container spacing={3}>
               {/* Importo */}
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} md={6}>
                 <Controller
                   name="amount"
                   control={control}
@@ -232,21 +241,15 @@ const IncomeForm = ({
                       fullWidth
                       label="Importo"
                       type="number"
-                      inputProps={{ 
-                        step: "0.01",
-                        min: "0",
-                        max: "999999.99"
-                      }}
+                      error={!!errors.amount}
+                      helperText={errors.amount?.message}
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
-                            <EuroOutlined />
+                            {getCurrencySymbol()}
                           </InputAdornment>
                         ),
                       }}
-                      error={!!errors.amount}
-                      helperText={errors.amount?.message}
-                      disabled={submitLoading}
                     />
                   )}
                 />

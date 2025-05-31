@@ -20,7 +20,6 @@ import {
   MenuItem,
   Avatar,
   Paper,
-  Chip,
   Switch,
   FormControlLabel,
   Slider,
@@ -29,13 +28,12 @@ import {
   SaveOutlined,
   CloseOutlined,
   AccountBalanceWalletOutlined,
-  EuroOutlined,
-  CalendarTodayOutlined,
   NotificationsOutlined,
   AutorenewOutlined,
 } from '@mui/icons-material';
 import { budgetSchema } from '../../utils/validationSchemas';
 import { budgetAPI } from '../../services/api';
+import { useSettings } from '../../contexts/SettingsContext';
 
 // Mapping icone per compatibilità
 const ICON_MAP = {
@@ -70,6 +68,7 @@ const BudgetForm = ({
   defaultYear,
   onSuccess 
 }) => {
+  const { settings, formatCurrency } = useSettings();
   const isEdit = Boolean(budget);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState('');
@@ -166,6 +165,12 @@ const BudgetForm = ({
     setValue('autoRenew', value);
   };
 
+  // Simbolo valuta dalle impostazioni
+  const getCurrencySymbol = () => {
+    const symbols = { EUR: '€', USD: '$', GBP: '£' };
+    return symbols[settings.currency] || '€';
+  };
+
   // Submit form
   const onSubmit = async (data) => {
     setSubmitLoading(true);
@@ -220,15 +225,6 @@ const BudgetForm = ({
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
-  // Formattazione
-  const formatAmount = (amount) => {
-    if (!amount) return '€0,00';
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount);
-  };
-
   return (
     <Dialog 
       open={open} 
@@ -280,7 +276,7 @@ const BudgetForm = ({
                         {selectedCategory.name}
                       </Typography>
                       <Typography variant="h5" color="primary.main" fontWeight="bold">
-                        {formatAmount(watch('amount'))}
+                        {formatCurrency(watch('amount') || 0)}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         {months.find(m => m.value === watch('month'))?.label} {watch('year')}
@@ -351,7 +347,7 @@ const BudgetForm = ({
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <EuroOutlined />
+                          {getCurrencySymbol()}
                         </InputAdornment>
                       ),
                     }}

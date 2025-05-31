@@ -6,6 +6,11 @@ import {
   Card,
   CardContent,
   Grid,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  LinearProgress,
   IconButton,
   Menu,
   MenuItem as MenuItemComponent,
@@ -20,30 +25,24 @@ import {
   DialogActions,
   Chip,
   Avatar,
-  LinearProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Paper,
 } from '@mui/material';
 import {
   AddOutlined,
+  AccountBalanceWalletOutlined,
   MoreVertOutlined,
   EditOutlined,
   DeleteOutlined,
-  AccountBalanceWalletOutlined,
-  RefreshOutlined,
-  TrendingUpOutlined,
-  TrendingDownOutlined,
   WarningOutlined,
   CheckCircleOutlined,
-  AutorenewOutlined,
+  TrendingUpOutlined,
+  RefreshOutlined,
   CalendarTodayOutlined,
+  AutorenewOutlined,
 } from '@mui/icons-material';
 import { budgetAPI, categoryAPI } from '../services/api';
 import BudgetForm from '../components/Budgets/BudgetForm';
 import useApiCall from '../hooks/useApiCall';
+import { useSettings } from '../contexts/SettingsContext';
 
 // Mapping icone per compatibilità
 const ICON_MAP = {
@@ -70,6 +69,7 @@ const ICON_MAP = {
 };
 
 const BudgetsPage = () => {
+  const { formatCurrency } = useSettings();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
@@ -108,7 +108,7 @@ const BudgetsPage = () => {
   }, [fetchParams]);
 
   // Uso l'hook per gestire le chiamate API
-  const { data: categoriesResponse, loading: categoriesLoading, refetch: refetchCategories } = useApiCall(fetchCategories, []);
+  const { data: categoriesResponse } = useApiCall(fetchCategories, []);
   const { data: budgetsResponse, loading: budgetsLoading, error: budgetsError, refetch: refetchBudgets } = useApiCall(fetchBudgets, [fetchParams]);
   const { data: summaryResponse, loading: summaryLoading, refetch: refetchSummary } = useApiCall(fetchSummary, [fetchParams]);
 
@@ -176,7 +176,7 @@ const BudgetsPage = () => {
     refetchAll();
     setFormOpen(false);
     setEditingBudget(null);
-  }, []);
+  }, [refetchAll]);
 
   // Menu azioni
   const handleMenuOpen = (event, budget) => {
@@ -191,10 +191,7 @@ const BudgetsPage = () => {
 
   // Formattazione
   const formatAmount = (amount) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount);
+    return formatCurrency(amount);
   };
 
   const getStatusColor = (percentageUsed) => {

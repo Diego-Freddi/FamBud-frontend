@@ -18,8 +18,9 @@ const StatsCard = ({
   trend,
   trendValue,
   loading = false,
+  formatValue,
 }) => {
-  const formatValue = (val) => {
+  const defaultFormatValue = (val) => {
     if (typeof val === 'number') {
       return new Intl.NumberFormat('it-IT', {
         style: 'currency',
@@ -28,6 +29,8 @@ const StatsCard = ({
     }
     return val;
   };
+
+  const valueFormatter = formatValue || defaultFormatValue;
 
   const getTrendColor = () => {
     if (!trend) return 'default';
@@ -59,7 +62,7 @@ const StatsCard = ({
             </Typography>
             
             <Typography variant="h4" component="div" fontWeight="bold" sx={{ mb: 1 }}>
-              {loading ? '...' : formatValue(value)}
+              {loading ? '...' : valueFormatter(value)}
             </Typography>
             
             {subtitle && (

@@ -24,7 +24,6 @@ import {
 import {
   SaveOutlined,
   CloseOutlined,
-  EuroOutlined,
   CalendarTodayOutlined,
   DescriptionOutlined,
   CategoryOutlined,
@@ -33,9 +32,10 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { it } from 'date-fns/locale';
+import { it, enUS } from 'date-fns/locale';
 import { expenseSchema } from '../../utils/validationSchemas';
 import { expenseAPI, categoryAPI } from '../../services/api';
+import { useSettings } from '../../contexts/SettingsContext';
 
 const ExpenseForm = ({ 
   open, 
@@ -43,6 +43,7 @@ const ExpenseForm = ({
   expense = null, 
   onSuccess 
 }) => {
+  const { settings } = useSettings();
   const isEdit = Boolean(expense);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState('');
@@ -52,6 +53,12 @@ const ExpenseForm = ({
   // Stati per categorie - gestione manuale
   const [categoriesData, setCategoriesData] = useState(null);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+  // Simbolo valuta dalle impostazioni
+  const getCurrencySymbol = () => {
+    const symbols = { EUR: '€', USD: '$', GBP: '£' };
+    return symbols[settings.currency] || '€';
+  };
 
   // Carica categorie una sola volta
   useEffect(() => {
@@ -78,8 +85,6 @@ const ExpenseForm = ({
     handleSubmit,
     formState: { errors },
     reset,
-    setValue,
-    watch,
   } = useForm({
     resolver: yupResolver(expenseSchema),
     defaultValues: {
@@ -181,7 +186,7 @@ const ExpenseForm = ({
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={it}>
+    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={settings.language === 'en' ? enUS : it}>
       <Dialog 
         open={open} 
         onClose={onClose} 
@@ -228,7 +233,7 @@ const ExpenseForm = ({
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
-                            <EuroOutlined />
+                            {getCurrencySymbol()}
                           </InputAdornment>
                         ),
                       }}

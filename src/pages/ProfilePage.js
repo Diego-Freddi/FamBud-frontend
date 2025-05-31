@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
@@ -21,8 +20,6 @@ import {
   Paper,
   Tabs,
   Tab,
-  FormControl,
-  FormLabel,
 } from '@mui/material';
 import {
   EditOutlined,
@@ -31,8 +28,6 @@ import {
   DeleteOutlined,
   PhotoCameraOutlined,
   EmailOutlined,
-  CalendarTodayOutlined,
-  AccessTimeOutlined,
   FamilyRestroomOutlined,
   AdminPanelSettingsOutlined,
   PersonOutlined,
@@ -41,13 +36,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { familyAPI, profileAPI } from '../services/api';
 import { changePasswordSchema } from '../utils/validationSchemas';
 import useApiCall from '../hooks/useApiCall';
+import { useSettings } from '../contexts/SettingsContext';
 
 // URL avatar di default da Cloudinary (fuori dal componente per evitare re-render)
 const DEFAULT_AVATAR_URL = `https://res.cloudinary.com/dw1vq50a6/image/upload/v1/familybudget/defaults/avatar-default.png`;
 
 const ProfilePage = () => {
-  const { user, updateUser } = useAuth();
-  const navigate = useNavigate();
+  const { user, updateUser, logout } = useAuth();
+  const { settings, formatDate } = useSettings();
   
   // Stati per dialogs
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
@@ -223,7 +219,7 @@ const ProfilePage = () => {
       await profileAPI.deleteAccount();
       setDeleteDialogOpen(false);
       // Logout automatico dopo eliminazione
-      navigate('/login');
+      logout();
     } catch (err) {
       setError(err.response?.data?.message || 'Errore nell\'eliminazione account');
       setLoading(false);
@@ -231,18 +227,10 @@ const ProfilePage = () => {
   };
 
   // Formattazione date
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Non disponibile';
-    return new Date(dateString).toLocaleDateString('it-IT', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
-
   const formatDateTime = (dateString) => {
     if (!dateString) return 'Non disponibile';
-    return new Date(dateString).toLocaleString('it-IT', {
+    const locale = settings.language === 'en' ? 'en-US' : 'it-IT';
+    return new Date(dateString).toLocaleString(locale, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',

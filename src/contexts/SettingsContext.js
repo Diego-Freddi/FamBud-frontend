@@ -113,12 +113,6 @@ export const SettingsProvider = ({ children }) => {
   const isDarkMode = settings.theme === 'dark';
   
   const formatCurrency = (amount) => {
-    const currencySymbols = {
-      EUR: '€',
-      USD: '$',
-      GBP: '£'
-    };
-    
     return new Intl.NumberFormat('it-IT', {
       style: 'currency',
       currency: settings.currency,
