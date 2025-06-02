@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import { authAPI, handleAPIError } from '../services/api';
-import keepAliveService from '../services/keepAlive';
 
 // Stato iniziale
 const initialState = {
@@ -104,22 +103,6 @@ const AuthContext = createContext();
 // Provider component
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
-
-  // Gestione keep-alive service basato sullo stato di autenticazione
-  useEffect(() => {
-    if (state.isAuthenticated && !state.isLoading) {
-      // Avvia keep-alive quando l'utente è autenticato
-      keepAliveService.start();
-    } else {
-      // Ferma keep-alive quando l'utente non è autenticato
-      keepAliveService.stop();
-    }
-
-    // Cleanup al unmount del componente
-    return () => {
-      keepAliveService.stop();
-    };
-  }, [state.isAuthenticated, state.isLoading]);
 
   // Carica utente al mount se c'è un token
   useEffect(() => {

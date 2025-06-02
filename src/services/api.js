@@ -6,7 +6,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050/api
 // Istanza axios configurata
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000, // Aumentato a 30 secondi per gestire cold start di Render
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -262,14 +262,7 @@ export const handleAPIError = (error) => {
       data: error.response.data
     };
   } else if (error.request) {
-    // Errore di rete - distingui tra timeout e problemi di connessione
-    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-      return {
-        message: 'Il server sta riavviandosi, riprova tra qualche secondo...',
-        status: 0,
-        data: null
-      };
-    }
+    // Errore di rete
     return {
       message: 'Errore di connessione. Controlla la tua connessione internet.',
       status: 0,
