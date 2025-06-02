@@ -135,4 +135,4 @@ const ColdStartNotification = ({
   );
 };
 
-export default ColdStartNotification; 
+export default ColdStartNotification;

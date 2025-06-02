@@ -78,4 +78,4 @@ const useApiCall = (apiFunction, dependencies = [], options = {}) => {
   };
 };
 
-export default useApiCall; 
+export default useApiCall;
