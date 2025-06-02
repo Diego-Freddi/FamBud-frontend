@@ -505,153 +505,51 @@ const IncomesPage = () => {
           </Card>
         ) : (
           <>
-            {/* Tabella entrate */}
-            <TableContainer component={Paper} sx={{ mt: 2 }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>
-                      <TableSortLabel
-                        active={sortBy === 'date'}
-                        direction={sortBy === 'date' ? sortOrder : 'desc'}
-                      onClick={() => handleSort('date')}
-                    >
-                      Data
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell>
-                      <TableSortLabel
-                        active={sortBy === 'description'}
-                        direction={sortBy === 'description' ? sortOrder : 'asc'}
-                      onClick={() => handleSort('description')}
-                    >
-                      Descrizione
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell>
-                      <TableSortLabel
-                        active={sortBy === 'amount'}
-                        direction={sortBy === 'amount' ? sortOrder : 'desc'}
-                      onClick={() => handleSort('amount')}
-                    >
-                      Importo
-                      </TableSortLabel>
-                    </TableCell>
-                  {!isMobile && (
-                      <TableCell>
-                        <TableSortLabel
-                          active={sortBy === 'source'}
-                          direction={sortBy === 'source' ? sortOrder : 'asc'}
-                          onClick={() => handleSort('source')}
-                        >
-                          Fonte
-                        </TableSortLabel>
-                      </TableCell>
-                    )}
-                    {!isMobile && (
-                      <TableCell>
-                        <TableSortLabel
-                          active={sortBy === 'type'}
-                          direction={sortBy === 'type' ? sortOrder : 'asc'}
-                          onClick={() => handleSort('type')}
-                        >
-                          Tipo
-                        </TableSortLabel>
-                      </TableCell>
-                    )}
-                    <TableCell>Azioni</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {incomesLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={isMobile ? 4 : 6} sx={{ py: 4, textAlign: 'center' }}>
-                        <CircularProgress />
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredIncomes.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={isMobile ? 4 : 6} sx={{ py: 4, textAlign: 'center' }}>
-                        <TrendingUpOutlined sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-                        <Typography variant="h6" color="text.secondary" gutterBottom>
-                          Nessuna entrata trovata
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {filters.search || filters.source !== 'all' || filters.minAmount || filters.maxAmount
-                            ? 'Prova a modificare i filtri di ricerca'
-                            : 'Inizia aggiungendo la tua prima entrata'
-                          }
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredIncomes.map((income) => {
-              const recurringLabel = getRecurringLabel(income);
-              
-              return (
-                        <TableRow key={income._id} hover>
-                          <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <CalendarTodayOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
-                          <Typography variant="body2">
-                            {formatDate(income.date)}
+            {/* Layout responsivo: Tabella su desktop, Card su mobile */}
+            {isMobile ? (
+              /* Layout Card per Mobile */
+              <Box sx={{ mt: 2 }}>
+                {filteredIncomes.map((income) => {
+                  const recurringLabel = getRecurringLabel(income);
+                  
+                  return (
+                    <Card key={income._id} sx={{ mb: 2, border: '1px solid', borderColor: 'success.main' }}>
+                      <CardContent sx={{ p: 2 }}>
+                        {/* Header: Data e Importo */}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <CalendarTodayOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
+                            <Typography variant="body2" color="text.secondary">
+                              {formatDate(income.date)}
+                            </Typography>
+                          </Box>
+                          <Typography variant="h6" fontWeight="bold" color="success.main">
+                            +{formatCurrency(income.amount)}
                           </Typography>
                         </Box>
-                          </TableCell>
-                      
-                          <TableCell>
-                        <Typography variant="body1" fontWeight="medium">
+
+                        {/* Descrizione */}
+                        <Typography variant="body1" fontWeight="medium" sx={{ mb: 1 }}>
                           {income.description}
                         </Typography>
-                            {income.notes && (
-                              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                                {income.notes}
-                              </Typography>
-                            )}
-                            {/* Su mobile, mostra fonte e tipo sotto la descrizione */}
-                                                 {isMobile && (
-                              <Box sx={{ mt: 1 }}>
-                             <Chip
-                               label={getSourceLabel(income.source)}
-                               size="small"
-                               color="primary"
-                               variant="outlined"
-                                  sx={{ mr: 1 }}
-                             />
-                            {recurringLabel && (
-                              <Chip
-                                label={recurringLabel}
-                                size="small"
-                                color="success"
-                                variant="outlined"
-                                icon={<RepeatOutlined />}
-                              />
-                            )}
-                          </Box>
+
+                        {/* Note */}
+                        {income.notes && (
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                            {income.notes}
+                          </Typography>
                         )}
-                          </TableCell>
-                      
-                          <TableCell>
-                        <Typography variant="body1" fontWeight="bold" color="success.main">
-                           +{formatCurrency(income.amount)}
-                        </Typography>
-                          </TableCell>
-                      
-                          {/* Fonte - nascosta su mobile */}
-                      {!isMobile && (
-                            <TableCell>
-                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                               <BusinessOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
-                               <Typography variant="body2">
-                                 {getSourceLabel(income.source)}
-                               </Typography>
-                             </Box>
-                            </TableCell>
-                          )}
-                          
-                          {/* Tipo - nascosto su mobile */}
-                          {!isMobile && (
-                            <TableCell>
+
+                        {/* Footer: Fonte, Tipo e Azioni */}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                            <Chip
+                              label={getSourceLabel(income.source)}
+                              size="small"
+                              color="primary"
+                              variant="outlined"
+                              icon={<BusinessOutlined />}
+                            />
                             {recurringLabel ? (
                               <Chip
                                 label={recurringLabel}
@@ -667,24 +565,170 @@ const IncomesPage = () => {
                                 variant="outlined"
                               />
                             )}
-                            </TableCell>
-                      )}
-                      
-                          <TableCell>
+                          </Box>
                           <IconButton
                             size="small"
                             onClick={(e) => handleMenuOpen(e, income)}
                           >
                             <MoreVertOutlined />
                           </IconButton>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </Box>
+            ) : (
+              /* Layout Tabella per Desktop */
+              <TableContainer component={Paper} sx={{ mt: 2 }}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>
+                        <TableSortLabel
+                          active={sortBy === 'date'}
+                          direction={sortBy === 'date' ? sortOrder : 'desc'}
+                          onClick={() => handleSort('date')}
+                        >
+                          Data
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell>
+                        <TableSortLabel
+                          active={sortBy === 'description'}
+                          direction={sortBy === 'description' ? sortOrder : 'asc'}
+                          onClick={() => handleSort('description')}
+                        >
+                          Descrizione
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell>
+                        <TableSortLabel
+                          active={sortBy === 'amount'}
+                          direction={sortBy === 'amount' ? sortOrder : 'desc'}
+                          onClick={() => handleSort('amount')}
+                        >
+                          Importo
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell>
+                        <TableSortLabel
+                          active={sortBy === 'source'}
+                          direction={sortBy === 'source' ? sortOrder : 'asc'}
+                          onClick={() => handleSort('source')}
+                        >
+                          Fonte
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell>
+                        <TableSortLabel
+                          active={sortBy === 'type'}
+                          direction={sortBy === 'type' ? sortOrder : 'asc'}
+                          onClick={() => handleSort('type')}
+                        >
+                          Tipo
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell>Azioni</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {incomesLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={6} sx={{ py: 4, textAlign: 'center' }}>
+                          <CircularProgress />
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredIncomes.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} sx={{ py: 4, textAlign: 'center' }}>
+                          <TrendingUpOutlined sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                          <Typography variant="h6" color="text.secondary" gutterBottom>
+                            Nessuna entrata trovata
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {filters.search || filters.source !== 'all' || filters.minAmount || filters.maxAmount
+                              ? 'Prova a modificare i filtri di ricerca'
+                              : 'Inizia aggiungendo la tua prima entrata'
+                            }
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredIncomes.map((income) => {
+                        const recurringLabel = getRecurringLabel(income);
+                        
+                        return (
+                          <TableRow key={income._id} hover>
+                            <TableCell>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <CalendarTodayOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                <Typography variant="body2">
+                                  {formatDate(income.date)}
+                                </Typography>
+                              </Box>
+                            </TableCell>
+                        
+                            <TableCell>
+                              <Typography variant="body1" fontWeight="medium">
+                                {income.description}
+                              </Typography>
+                              {income.notes && (
+                                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                                  {income.notes}
+                                </Typography>
+                              )}
+                            </TableCell>
+                        
+                            <TableCell>
+                              <Typography variant="body1" fontWeight="bold" color="success.main">
+                                +{formatCurrency(income.amount)}
+                              </Typography>
+                            </TableCell>
+                        
+                            <TableCell>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <BusinessOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                <Typography variant="body2">
+                                  {getSourceLabel(income.source)}
+                                </Typography>
+                              </Box>
+                            </TableCell>
+                            
+                            <TableCell>
+                              {recurringLabel ? (
+                                <Chip
+                                  label={recurringLabel}
+                                  size="small"
+                                  color="success"
+                                  variant="outlined"
+                                  icon={<RepeatOutlined />}
+                                />
+                              ) : (
+                                <Chip
+                                  label="Singola"
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              )}
+                            </TableCell>
+                        
+                            <TableCell>
+                              <IconButton
+                                size="small"
+                                onClick={(e) => handleMenuOpen(e, income)}
+                              >
+                                <MoreVertOutlined />
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
 
             {/* Paginazione */}
             {totalPages > 1 && (!filters.search || filters.search.length < 3) && (
