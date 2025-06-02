@@ -23,6 +23,8 @@ import {
   Tabs,
   Chip,
   Collapse,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   PersonAddOutlined,
@@ -46,6 +48,9 @@ const DEFAULT_AVATAR_URL = `https://res.cloudinary.com/dw1vq50a6/image/upload/v1
 const FamilyPage = () => {
   const { user } = useAuth();
   const { formatDate } = useSettings();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [error, setError] = useState('');
   
   // Stati per dialoghi
@@ -322,7 +327,7 @@ const FamilyPage = () => {
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           borderRadius: 2,
-          p: 4,
+          p: isMobile ? 2 : 4,
           mb: 4,
           color: 'white',
           position: 'relative',
@@ -330,42 +335,79 @@ const FamilyPage = () => {
         }}
       >
         <Box sx={{ position: 'relative', zIndex: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: isMobile ? 'flex-start' : 'center', 
+            gap: 2, 
+            mb: 3,
+            flexDirection: isSmallMobile ? 'column' : 'row'
+          }}>
             <Avatar 
               sx={{ 
-                width: 64, 
-                height: 64, 
+                width: isMobile ? 48 : 64, 
+                height: isMobile ? 48 : 64, 
                 bgcolor: 'rgba(255,255,255,0.2)',
-                fontSize: '2rem'
+                fontSize: isMobile ? '1.5rem' : '2rem'
               }}
             >
-              <GroupOutlined sx={{ fontSize: '2rem' }} />
+              <GroupOutlined sx={{ fontSize: isMobile ? '1.5rem' : '2rem' }} />
             </Avatar>
-          <Box>
-              <Typography variant="h3" component="h1" fontWeight="bold" gutterBottom>
+          <Box sx={{ flex: 1 }}>
+              <Typography 
+                variant={isMobile ? "h4" : "h3"} 
+                component="h1" 
+                fontWeight="bold" 
+                gutterBottom
+                sx={{ 
+                  fontSize: isSmallMobile ? '1.5rem' : undefined,
+                  lineHeight: 1.2
+                }}
+              >
                 {familyData?.name}
               </Typography>
-              <Typography variant="h6" sx={{ opacity: 0.9 }}>
+              <Typography 
+                variant={isMobile ? "body1" : "h6"} 
+                sx={{ 
+                  opacity: 0.9,
+                  fontSize: isSmallMobile ? '0.875rem' : undefined
+                }}
+              >
                 {familyData?.description || 'La tua famiglia digitale'}
               </Typography>
             </Box>
           </Box>
           
           {/* Stats Cards */}
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <Box sx={{ 
+            display: 'flex', 
+            gap: isMobile ? 1 : 2, 
+            flexWrap: 'wrap',
+            justifyContent: isSmallMobile ? 'space-between' : 'flex-start'
+          }}>
             <Box 
               sx={{ 
                 bgcolor: 'rgba(255,255,255,0.15)', 
                 borderRadius: 2, 
-                p: 2, 
-                minWidth: 120,
-                textAlign: 'center'
+                p: isMobile ? 1.5 : 2, 
+                minWidth: isSmallMobile ? 80 : 120,
+                textAlign: 'center',
+                flex: isSmallMobile ? 1 : 'none'
               }}
             >
-              <Typography variant="h4" fontWeight="bold">
+              <Typography 
+                variant={isMobile ? "h5" : "h4"} 
+                fontWeight="bold"
+                sx={{ fontSize: isSmallMobile ? '1.25rem' : undefined }}
+              >
                 {familyData?.members?.length || 0}
               </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  opacity: 0.9,
+                  fontSize: isSmallMobile ? '0.75rem' : undefined
+                }}
+              >
                 Membri
               </Typography>
             </Box>
@@ -373,52 +415,90 @@ const FamilyPage = () => {
               sx={{ 
                 bgcolor: 'rgba(255,255,255,0.15)', 
                 borderRadius: 2, 
-                p: 2, 
-                minWidth: 120,
-                textAlign: 'center'
+                p: isMobile ? 1.5 : 2, 
+                minWidth: isSmallMobile ? 80 : 120,
+                textAlign: 'center',
+                flex: isSmallMobile ? 1 : 'none'
               }}
             >
-              <Typography variant="h4" fontWeight="bold">
+              <Typography 
+                variant={isMobile ? "h5" : "h4"} 
+                fontWeight="bold"
+                sx={{ fontSize: isSmallMobile ? '1.25rem' : undefined }}
+              >
                 {familyData?.invitations?.filter(inv => inv.status === 'pending').length || 0}
               </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                Inviti Pendenti
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  opacity: 0.9,
+                  fontSize: isSmallMobile ? '0.75rem' : undefined
+                }}
+              >
+                {isSmallMobile ? 'Inviti' : 'Inviti Pendenti'}
               </Typography>
             </Box>
             <Box 
               sx={{ 
                 bgcolor: 'rgba(255,255,255,0.15)', 
                 borderRadius: 2, 
-                p: 2, 
-                minWidth: 120,
-                textAlign: 'center'
+                p: isMobile ? 1.5 : 2, 
+                minWidth: isSmallMobile ? 80 : 120,
+                textAlign: 'center',
+                flex: isSmallMobile ? 1 : 'none'
               }}
             >
-              <Typography variant="h4" fontWeight="bold">
+              <Typography 
+                variant={isMobile ? "h5" : "h4"} 
+                fontWeight="bold"
+                sx={{ fontSize: isSmallMobile ? '1.25rem' : undefined }}
+              >
                 {new Date(familyData?.createdAt).getFullYear() || new Date().getFullYear()}
             </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                Anno Creazione
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  opacity: 0.9,
+                  fontSize: isSmallMobile ? '0.75rem' : undefined
+                }}
+              >
+                {isSmallMobile ? 'Anno' : 'Anno Creazione'}
             </Typography>
             </Box>
           </Box>
         </Box>
         
         {/* Action Buttons */}
-        <Box sx={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 1 }}>
+        <Box sx={{ 
+          position: 'absolute', 
+          top: isMobile ? 8 : 16, 
+          right: isMobile ? 8 : 16, 
+          display: 'flex', 
+          gap: 1 
+        }}>
           <IconButton 
             onClick={refetchFamilyData} 
-            sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.1)' }}
+            sx={{ 
+              color: 'white', 
+              bgcolor: 'rgba(255,255,255,0.1)',
+              width: isMobile ? 36 : 40,
+              height: isMobile ? 36 : 40
+            }}
           >
-              <RefreshOutlined />
+              <RefreshOutlined sx={{ fontSize: isMobile ? '1rem' : '1.25rem' }} />
             </IconButton>
             {isUserAdmin() && (
             <IconButton
               onClick={() => setBannerDialogOpen(true)}
-              sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.1)' }}
+              sx={{ 
+                color: 'white', 
+                bgcolor: 'rgba(255,255,255,0.1)',
+                width: isMobile ? 36 : 40,
+                height: isMobile ? 36 : 40
+              }}
               title="Cambia banner famiglia"
             >
-              <EditOutlined />
+              <EditOutlined sx={{ fontSize: isMobile ? '1rem' : '1.25rem' }} />
             </IconButton>
             )}
           </Box>
@@ -436,20 +516,37 @@ const FamilyPage = () => {
           👥 Gestione Membri
         </Typography>
         
-        {/* Layout a due colonne: Membri Attivi e Ex-Membri */}
-        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+        {/* Layout responsive: due colonne su desktop, una colonna su mobile */}
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 3, 
+          flexDirection: isMobile ? 'column' : 'row',
+          flexWrap: 'wrap' 
+        }}>
           {/* Colonna Sinistra: Membri Attivi */}
-          <Box sx={{ flex: 1, minWidth: 300 }}>
+          <Box sx={{ flex: 1, minWidth: isMobile ? 'auto' : 300 }}>
             <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ mb: 2 }}>
               👥 Membri Attivi ({familyData?.activeMembers?.length || 0})
                 </Typography>
             
             {familyData?.activeMembers && familyData.activeMembers.length > 0 ? (
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 2, 
+                flexWrap: 'wrap',
+                flexDirection: isMobile ? 'column' : 'row'
+              }}>
                 {familyData.activeMembers
                   .filter(member => member.user) // Filtra membri con utente valido
                   .map((member) => (
-                  <Box key={member.user._id} sx={{ minWidth: 280, maxWidth: 360 }}>
+                  <Box 
+                    key={member.user._id} 
+                    sx={{ 
+                      minWidth: isMobile ? 'auto' : 390, 
+                      maxWidth: isMobile ? 'none' : 390,
+                      width: isMobile ? '100%' : 'auto'
+                    }}
+                  >
                     <Card 
                       sx={{ 
                         border: '1px solid',
@@ -463,32 +560,62 @@ const FamilyPage = () => {
                       }}
                       onClick={() => toggleMemberExpansion(member.user._id)}
                     >
-                      <CardContent sx={{ p: 3 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                      <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+                        <Box sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 2, 
+                          mb: 2,
+                          flexDirection: isSmallMobile ? 'column' : 'row',
+                          textAlign: isSmallMobile ? 'center' : 'left'
+                        }}>
                           <Avatar 
                             src={member.user?.avatar || DEFAULT_AVATAR_URL}
                             sx={{ 
-                              width: 56, 
-                              height: 56,
+                              width: isMobile ? 48 : 56, 
+                              height: isMobile ? 48 : 56,
                               border: member.role === 'admin' ? '3px solid #d32f2f' : '3px solid #1976d2'
                             }}
                           >
                             {!member.user?.avatar && member.user?.name?.charAt(0)?.toUpperCase()}
                           </Avatar>
                           <Box sx={{ flex: 1 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                              <Typography variant="h6" fontWeight="bold">
+                            <Box sx={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: 1, 
+                              mb: 0.5,
+                              flexDirection: isSmallMobile ? 'column' : 'row',
+                              justifyContent: isSmallMobile ? 'center' : 'flex-start'
+                            }}>
+                              <Typography 
+                                variant={isMobile ? "body1" : "h6"} 
+                                fontWeight="bold"
+                                sx={{ fontSize: isSmallMobile ? '1rem' : undefined }}
+                              >
                                 {member.user?.name || 'Utente eliminato'}
                               </Typography>
                               {member.user?._id === user?.id && (
                                 <Chip label="Tu" size="small" color="primary" />
                               )}
                             </Box>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography 
+                              variant="body2" 
+                              color="text.secondary"
+                              sx={{ 
+                                fontSize: isSmallMobile ? '0.75rem' : undefined,
+                                wordBreak: 'break-word'
+                              }}
+                            >
                               {member.user?.email || 'Email non disponibile'}
                             </Typography>
                           </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Box sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 1,
+                            flexDirection: isSmallMobile ? 'row' : 'row'
+                          }}>
                             <ExpandMoreOutlined 
                               sx={{ 
                                 transform: expandedMembers.has(member.user._id) ? 'rotate(180deg)' : 'rotate(0deg)',
@@ -509,14 +636,28 @@ const FamilyPage = () => {
                           </Box>
                         </Box>
                         
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box sx={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center',
+                          flexDirection: isSmallMobile ? 'column' : 'row',
+                          gap: isSmallMobile ? 1 : 0
+                        }}>
                           <Chip
                             icon={member.role === 'admin' ? <span>👑</span> : <span>👤</span>}
                             label={member.role === 'admin' ? 'Amministratore' : 'Membro'}
                             color={member.role === 'admin' ? 'error' : 'default'}
                             variant="outlined"
+                            size={isMobile ? "small" : "medium"}
                           />
-                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                          <Typography 
+                            variant="body2" 
+                            color="text.secondary" 
+                            sx={{ 
+                              fontSize: isSmallMobile ? '0.7rem' : '0.75rem',
+                              textAlign: isSmallMobile ? 'center' : 'right'
+                            }}
+                          >
                             📊 Clicca per statistiche
                           </Typography>
                         </Box>
@@ -528,14 +669,15 @@ const FamilyPage = () => {
                           borderTop: '1px solid', 
                           borderColor: 'divider',
                           bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.50',
-                          p: 2
+                          p: isMobile ? 1.5 : 2
                         }}>
                           <Typography variant="subtitle2" gutterBottom sx={{ 
                             display: 'flex', 
                             alignItems: 'center', 
                             gap: 1,
                             mb: 2,
-                            fontWeight: 'bold'
+                            fontWeight: 'bold',
+                            fontSize: isMobile ? '0.875rem' : undefined
                           }}>
                             📊 Statistiche di {member.user?.name || 'Utente eliminato'}
                           </Typography>
@@ -556,17 +698,29 @@ const FamilyPage = () => {
           </Box>
 
           {/* Colonna Destra: Ex-Membri */}
-          <Box sx={{ flex: 1, minWidth: 300 }}>
+          <Box sx={{ flex: 1, minWidth: isMobile ? 'auto' : 300 }}>
             <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ mb: 2, color: 'text.secondary' }}>
               👤❌ Ex-Membri ({familyData?.formerMembers?.length || 0})
             </Typography>
             
             {familyData?.formerMembers && familyData.formerMembers.length > 0 ? (
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 2, 
+                flexWrap: 'wrap',
+                flexDirection: isMobile ? 'column' : 'row'
+              }}>
                 {familyData.formerMembers
                   .filter(formerMember => formerMember.user) // Filtra ex-membri con utente valido
                   .map((formerMember) => (
-                  <Box key={formerMember.user._id} sx={{ minWidth: 280, maxWidth: 360 }}>
+                  <Box 
+                    key={formerMember.user._id} 
+                    sx={{ 
+                      minWidth: isMobile ? 'auto' : 280, 
+                      maxWidth: isMobile ? 'none' : 360,
+                      width: isMobile ? '100%' : 'auto'
+                    }}
+                  >
                     <Card 
                       sx={{ 
                         opacity: 0.7,
@@ -581,13 +735,20 @@ const FamilyPage = () => {
                       }}
                       onClick={() => toggleMemberExpansion(formerMember.user._id)}
                     >
-                      <CardContent sx={{ p: 3 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                      <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+                        <Box sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 2, 
+                          mb: 2,
+                          flexDirection: isSmallMobile ? 'column' : 'row',
+                          textAlign: isSmallMobile ? 'center' : 'left'
+                        }}>
                           <Avatar 
                             src={formerMember.user?.avatar || DEFAULT_AVATAR_URL}
                             sx={{ 
-                              width: 56, 
-                              height: 56,
+                              width: isMobile ? 48 : 56, 
+                              height: isMobile ? 48 : 56,
                               filter: 'grayscale(50%)',
                               border: '3px solid #9e9e9e'
                             }}
@@ -595,17 +756,42 @@ const FamilyPage = () => {
                             {!formerMember.user?.avatar && formerMember.user?.name?.charAt(0)?.toUpperCase()}
                           </Avatar>
                           <Box sx={{ flex: 1 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                              <Typography variant="h6" fontWeight="bold" sx={{ color: 'text.secondary' }}>
+                            <Box sx={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: 1, 
+                              mb: 0.5,
+                              flexDirection: isSmallMobile ? 'column' : 'row',
+                              justifyContent: isSmallMobile ? 'center' : 'flex-start'
+                            }}>
+                              <Typography 
+                                variant={isMobile ? "body1" : "h6"} 
+                                fontWeight="bold" 
+                                sx={{ 
+                                  color: 'text.secondary',
+                                  fontSize: isSmallMobile ? '1rem' : undefined
+                                }}
+                              >
                                 {formerMember.user?.name || 'Utente eliminato'}
                               </Typography>
                               <Chip label="Ex-membro" size="small" color="default" variant="outlined" />
                             </Box>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography 
+                              variant="body2" 
+                              color="text.secondary"
+                              sx={{ 
+                                fontSize: isSmallMobile ? '0.75rem' : undefined,
+                                wordBreak: 'break-word'
+                              }}
+                            >
                               {formerMember.user?.email || 'Email non disponibile'}
                             </Typography>
                             {formerMember.leftAt && (
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography 
+                                variant="caption" 
+                                color="text.secondary"
+                                sx={{ fontSize: isSmallMobile ? '0.7rem' : undefined }}
+                              >
                                 Uscito il {formatDate(formerMember.leftAt)}
                               </Typography>
                             )}
@@ -619,15 +805,29 @@ const FamilyPage = () => {
                           />
                         </Box>
                         
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box sx={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center',
+                          flexDirection: isSmallMobile ? 'column' : 'row',
+                          gap: isSmallMobile ? 1 : 0
+                        }}>
                           <Chip
                             icon={<span>👤</span>}
                             label={`Era ${formerMember.role === 'admin' ? 'Amministratore' : 'Membro'}`}
                             color="default"
                             variant="outlined"
                             sx={{ opacity: 0.7 }}
+                            size={isMobile ? "small" : "medium"}
                           />
-                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                          <Typography 
+                            variant="body2" 
+                            color="text.secondary" 
+                            sx={{ 
+                              fontSize: isSmallMobile ? '0.7rem' : '0.75rem',
+                              textAlign: isSmallMobile ? 'center' : 'right'
+                            }}
+                          >
                             📊 Clicca per statistiche storiche
                           </Typography>
                         </Box>
@@ -639,7 +839,7 @@ const FamilyPage = () => {
                           borderTop: '1px solid', 
                           borderColor: 'divider',
                           bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100',
-                          p: 2
+                          p: isMobile ? 1.5 : 2
                         }}>
                           <Typography variant="subtitle2" gutterBottom sx={{ 
                             display: 'flex', 
@@ -647,7 +847,8 @@ const FamilyPage = () => {
                             gap: 1,
                             mb: 2,
                             fontWeight: 'bold',
-                            color: 'text.secondary'
+                            color: 'text.secondary',
+                            fontSize: isMobile ? '0.875rem' : undefined
                           }}>
                             📊 Statistiche storiche di {formerMember.user?.name || 'Utente eliminato'}
                           </Typography>
@@ -670,9 +871,15 @@ const FamilyPage = () => {
       </Box>
 
       {/* Inviti e Impostazioni Row */}
-      <Box sx={{ display: 'flex', gap: 3, mb: 4, flexWrap: 'wrap' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        gap: 3, 
+        mb: 4, 
+        flexWrap: 'wrap',
+        flexDirection: isMobile ? 'column' : 'row'
+      }}>
         {/* Inviti Pendenti */}
-        <Box sx={{ flex: 1, minWidth: 300 }}>
+        <Box sx={{ flex: 1, minWidth: isMobile ? 'auto' : 300 }}>
           <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 2 }}>
             📧 Inviti Pendenti
           </Typography>

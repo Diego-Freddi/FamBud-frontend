@@ -20,6 +20,8 @@ import {
   Alert,
   CircularProgress,
   InputAdornment,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   SaveOutlined,
@@ -44,6 +46,8 @@ const ExpenseForm = ({
   onSuccess 
 }) => {
   const { settings } = useSettings();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isEdit = Boolean(expense);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState('');
@@ -192,8 +196,9 @@ const ExpenseForm = ({
         onClose={onClose} 
         maxWidth="md" 
         fullWidth
+        fullScreen={isMobile}
         PaperProps={{
-          sx: { borderRadius: 2 }
+          sx: { borderRadius: isMobile ? 0 : 2 }
         }}
       >
         <DialogTitle>

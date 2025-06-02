@@ -17,6 +17,8 @@ import {
   Avatar,
   Paper,
   Chip,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   SaveOutlined,
@@ -75,6 +77,8 @@ const CategoryForm = ({
   category = null, 
   onSuccess 
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isEdit = Boolean(category);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState('');
@@ -222,8 +226,9 @@ const CategoryForm = ({
       onClose={onClose} 
       maxWidth="md" 
       fullWidth
+      fullScreen={isMobile}
       PaperProps={{
-        sx: { borderRadius: 2 }
+        sx: { borderRadius: isMobile ? 0 : 2 }
       }}
     >
       <DialogTitle>

@@ -458,112 +458,193 @@ const ExpensesPage = () => {
           </Alert>
         )}
 
-        {/* Tabella spese */}
-        <TableContainer component={Paper} sx={{ mt: 2 }}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>
-                  <TableSortLabel
-                    active={sortBy === 'date'}
-                    direction={sortBy === 'date' ? sortOrder : 'desc'}
-                      onClick={() => handleSort('date')}
-                    >
-                      Data
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell>
-                  <TableSortLabel
-                    active={sortBy === 'description'}
-                    direction={sortBy === 'description' ? sortOrder : 'asc'}
-                      onClick={() => handleSort('description')}
-                    >
-                      Descrizione
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell>
-                  <TableSortLabel
-                    active={sortBy === 'amount'}
-                    direction={sortBy === 'amount' ? sortOrder : 'desc'}
-                      onClick={() => handleSort('amount')}
-                    >
-                      Importo
-                  </TableSortLabel>
-                </TableCell>
-                  {!isMobile && (
-                  <TableCell>
-                    <TableSortLabel
-                      active={sortBy === 'category'}
-                      direction={sortBy === 'category' ? sortOrder : 'asc'}
-                          onClick={() => handleSort('category')}
-                        >
-                          Categoria
-                    </TableSortLabel>
-                  </TableCell>
-                )}
-                {!isMobile && (
-                  <TableCell>
-                    <TableSortLabel
-                      active={sortBy === 'user'}
-                      direction={sortBy === 'user' ? sortOrder : 'asc'}
-                          onClick={() => handleSort('user')}
-                        >
-                          Utente
-                    </TableSortLabel>
-                  </TableCell>
-                )}
-                <TableCell>Azioni</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {expensesLoading ? (
-                <TableRow>
-                  <TableCell colSpan={isMobile ? 4 : 6} sx={{ py: 4, textAlign: 'center' }}>
-                    <CircularProgress />
-                  </TableCell>
-                </TableRow>
-              ) : filteredExpenses.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={isMobile ? 4 : 6} sx={{ py: 4, textAlign: 'center' }}>
-                    <ReceiptOutlined sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-                    <Typography variant="h6" color="text.secondary" gutterBottom>
-                      Nessuna spesa trovata
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {filters.search || filters.category !== 'all' || filters.minAmount || filters.maxAmount
-                        ? 'Prova a modificare i filtri di ricerca'
-                        : 'Inizia aggiungendo la tua prima spesa'
-                      }
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredExpenses.map((expense) => {
-              const categoryInfo = getCategoryInfo(expense);
-              
-              return (
-                    <TableRow key={expense._id} hover>
+        {/* Lista spese */}
+        {expensesLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : filteredExpenses.length === 0 ? (
+          <Card>
+            <CardContent sx={{ textAlign: 'center', py: 6 }}>
+              <ReceiptOutlined sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                Nessuna spesa trovata
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                {filters.search || filters.category !== 'all' || filters.minAmount || filters.maxAmount
+                  ? 'Prova a modificare i filtri di ricerca'
+                  : 'Inizia aggiungendo la tua prima spesa'
+                }
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<AddOutlined />}
+                onClick={handleAddExpense}
+              >
+                Aggiungi Prima Spesa
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {/* Layout Desktop - Tabella */}
+            {!isMobile ? (
+              <TableContainer component={Paper} sx={{ mt: 2 }}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
                       <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <CalendarTodayOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
-                          <Typography variant="body2">
-                            {formatDate(expense.date)}
+                        <TableSortLabel
+                          active={sortBy === 'date'}
+                          direction={sortBy === 'date' ? sortOrder : 'desc'}
+                            onClick={() => handleSort('date')}
+                          >
+                            Data
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell>
+                        <TableSortLabel
+                          active={sortBy === 'description'}
+                          direction={sortBy === 'description' ? sortOrder : 'asc'}
+                            onClick={() => handleSort('description')}
+                          >
+                            Descrizione
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell>
+                        <TableSortLabel
+                          active={sortBy === 'amount'}
+                          direction={sortBy === 'amount' ? sortOrder : 'desc'}
+                            onClick={() => handleSort('amount')}
+                          >
+                            Importo
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell>
+                        <TableSortLabel
+                          active={sortBy === 'category'}
+                          direction={sortBy === 'category' ? sortOrder : 'asc'}
+                              onClick={() => handleSort('category')}
+                            >
+                              Categoria
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell>
+                        <TableSortLabel
+                          active={sortBy === 'user'}
+                          direction={sortBy === 'user' ? sortOrder : 'asc'}
+                              onClick={() => handleSort('user')}
+                            >
+                              Utente
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell>Azioni</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredExpenses.map((expense) => {
+                  const categoryInfo = getCategoryInfo(expense);
+                  
+                  return (
+                        <TableRow key={expense._id} hover>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <CalendarTodayOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
+                              <Typography variant="body2">
+                                {formatDate(expense.date)}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          
+                          <TableCell>
+                            <Typography variant="body1" fontWeight="medium">
+                              {expense.description}
+                            </Typography>
+                            {expense.notes && (
+                              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                                {expense.notes}
+                              </Typography>
+                            )}
+                          </TableCell>
+                          
+                          <TableCell>
+                            <Typography variant="body1" fontWeight="bold" color="error.main">
+                              {formatCurrency(expense.amount)}
+                            </Typography>
+                          </TableCell>
+                          
+                          <TableCell>
+                              <Chip
+                                label={categoryInfo.name}
+                                size="small"
+                                sx={{
+                                  backgroundColor: categoryInfo.color,
+                                  color: 'white',
+                                }}
+                              />
+                          </TableCell>
+                          
+                          <TableCell>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <PersonOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
+                              <Typography variant="body2">
+                                  {expense.userId?.name || 'Tu'}
+                                </Typography>
+                              </Box>
+                          </TableCell>
+                          
+                          <TableCell>
+                              <IconButton
+                                size="small"
+                                onClick={(e) => handleMenuOpen(e, expense)}
+                              >
+                                <MoreVertOutlined />
+                              </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              /* Layout Mobile - Cards */
+              <Box sx={{ mt: 2 }}>
+                {filteredExpenses.map((expense) => {
+                  const categoryInfo = getCategoryInfo(expense);
+                  
+                  return (
+                    <Card key={expense._id} sx={{ mb: 2 }}>
+                      <CardContent sx={{ pb: 2 }}>
+                        {/* Header con data e importo */}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <CalendarTodayOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
+                            <Typography variant="body2" color="text.secondary">
+                              {formatDate(expense.date)}
+                            </Typography>
+                          </Box>
+                          <Typography variant="h6" fontWeight="bold" color="error.main">
+                            {formatCurrency(expense.amount)}
                           </Typography>
                         </Box>
-                      </TableCell>
-                      
-                      <TableCell>
-                        <Typography variant="body1" fontWeight="medium">
+
+                        {/* Descrizione */}
+                        <Typography variant="body1" fontWeight="medium" sx={{ mb: 1 }}>
                           {expense.description}
                         </Typography>
+
+                        {/* Note se presenti */}
                         {expense.notes && (
-                          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                             {expense.notes}
                           </Typography>
                         )}
-                        {/* Su mobile, mostra categoria sotto la descrizione */}
-                        {isMobile && (
-                          <Box sx={{ mt: 1 }}>
+
+                        {/* Info aggiuntive */}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flex: 1 }}>
+                            {/* Categoria */}
                             <Chip
                               label={categoryInfo.name}
                               size="small"
@@ -573,77 +654,53 @@ const ExpensesPage = () => {
                                 fontSize: '0.75rem',
                               }}
                             />
-                          </Box>
-                        )}
-                      </TableCell>
-                      
-                      <TableCell>
-                        <Typography variant="body1" fontWeight="bold" color="error.main">
-                          {formatCurrency(expense.amount)}
-                        </Typography>
-                      </TableCell>
-                      
-                      {/* Categoria - nascosta su mobile */}
-                      {!isMobile && (
-                        <TableCell>
-                            <Chip
-                              label={categoryInfo.name}
-                              size="small"
-                              sx={{
-                                backgroundColor: categoryInfo.color,
-                                color: 'white',
-                              }}
-                            />
-                        </TableCell>
-                      )}
-                      
-                      {/* Utente - nascosto su mobile */}
-                      {!isMobile && (
-                        <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <PersonOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
-                            <Typography variant="body2">
+                            
+                            {/* Utente */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <PersonOutlined sx={{ fontSize: 14, color: 'text.secondary' }} />
+                              <Typography variant="caption" color="text.secondary">
                                 {expense.userId?.name || 'Tu'}
                               </Typography>
                             </Box>
-                        </TableCell>
-                      )}
-                      
-                      <TableCell>
+                          </Box>
+
+                          {/* Menu azioni */}
                           <IconButton
                             size="small"
                             onClick={(e) => handleMenuOpen(e, expense)}
+                            sx={{ ml: 1 }}
                           >
                             <MoreVertOutlined />
                           </IconButton>
-                      </TableCell>
-                    </TableRow>
+                        </Box>
+                      </CardContent>
+                    </Card>
                   );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-            {/* Paginazione */}
-            {totalPages > 1 && (!filters.search || filters.search.length < 3) && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-                <Pagination
-                  count={totalPages}
-                  page={page}
-                  onChange={(e, newPage) => setPage(newPage)}
-                  color="primary"
-                />
+                })}
               </Box>
             )}
 
-            {/* Messaggio quando si usa ricerca frontend */}
-            {filters.search && filters.search.length >= 3 && (
-              <Box sx={{ textAlign: 'center', mt: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Mostrando {filteredExpenses.length} risultati per "{filters.search}"
-                </Typography>
-              </Box>
+                {/* Paginazione */}
+                {totalPages > 1 && (!filters.search || filters.search.length < 3) && (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                    <Pagination
+                      count={totalPages}
+                      page={page}
+                      onChange={(e, newPage) => setPage(newPage)}
+                      color="primary"
+                    />
+                  </Box>
+                )}
+
+                {/* Messaggio quando si usa ricerca frontend */}
+                {filters.search && filters.search.length >= 3 && (
+                  <Box sx={{ textAlign: 'center', mt: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Mostrando {filteredExpenses.length} risultati per "{filters.search}"
+                    </Typography>
+                  </Box>
+            )}
+          </>
         )}
 
         {/* FAB per mobile */}

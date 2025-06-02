@@ -23,6 +23,8 @@ import {
   Switch,
   FormControlLabel,
   Slider,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   SaveOutlined,
@@ -64,11 +66,13 @@ const BudgetForm = ({
   onClose, 
   budget = null, 
   categories = [],
-  defaultMonth,
-  defaultYear,
+  defaultMonth = null,
+  defaultYear = null,
   onSuccess 
 }) => {
   const { settings, formatCurrency } = useSettings();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isEdit = Boolean(budget);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState('');
@@ -231,8 +235,9 @@ const BudgetForm = ({
       onClose={onClose} 
       maxWidth="md" 
       fullWidth
+      fullScreen={isMobile}
       PaperProps={{
-        sx: { borderRadius: 2 }
+        sx: { borderRadius: isMobile ? 0 : 2 }
       }}
     >
       <DialogTitle>

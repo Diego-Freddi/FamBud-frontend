@@ -17,6 +17,8 @@ import {
   ListItemIcon,
   ListItemText,
   CircularProgress,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import useWindowResize from '../../hooks/useWindowResize';
 
@@ -30,6 +32,11 @@ const ExpensesPieChart = ({
 }) => {
   // Hook per gestire il ridimensionamento della finestra
   const windowSize = useWindowResize();
+  
+  // Hook per responsività
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
   // Funzione di formattazione di default
   const defaultFormatCurrency = (amount) => {
@@ -100,17 +107,32 @@ const ExpensesPieChart = ({
     responsive: true,
     maintainAspectRatio: false,
     resizeDelay: 0,
+    interaction: {
+      // Migliora l'interazione touch su mobile
+      intersect: false,
+      mode: 'nearest',
+    },
     plugins: {
       legend: {
         display: false, // Usiamo una legenda personalizzata
       },
       tooltip: {
+        enabled: true,
+        // Migliora i tooltip per mobile
+        position: 'nearest',
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: 'white',
+        bodyColor: 'white',
+        borderColor: theme.palette.primary.main,
+        borderWidth: 1,
+        cornerRadius: 8,
+        displayColors: true,
         callbacks: {
           label: function(context) {
             const value = context.parsed;
             const total = context.dataset.data.reduce((a, b) => a + b, 0);
             const percentage = ((value / total) * 100).toFixed(1);
-            return `${currencyFormatter(value)} (${percentage}%)`;
+            return `${context.label}: ${currencyFormatter(value)} (${percentage}%)`;
           },
         },
       },
@@ -146,9 +168,19 @@ const ExpensesPieChart = ({
         subheader={`Totale: ${currencyFormatter(total)}`}
       />
       <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Box sx={{ display: 'flex', gap: 2, flex: 1, minHeight: 300 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2, 
+          flex: 1, 
+          minHeight: isMobile ? 250 : 300,
+          flexDirection: isMobile ? 'column' : 'row'
+        }}>
           {/* Grafico */}
-          <Box sx={{ flex: 1, position: 'relative' }}>
+          <Box sx={{ 
+            flex: 1, 
+            position: 'relative',
+            minHeight: isMobile ? 200 : 250
+          }}>
             <Pie 
               key={`pie-${windowSize.width}-${windowSize.height}`}
               data={pieData} 
@@ -156,40 +188,51 @@ const ExpensesPieChart = ({
             />
           </Box>
           
-          {/* Legenda personalizzata */}
-          <Box sx={{ width: 200 }}>
-            <List dense>
-              {chartData.map((item, index) => {
-                const percentage = ((item.amount / total) * 100).toFixed(1);
-                return (
-                  <ListItem key={index} sx={{ py: 0.5 }}>
-                    <ListItemIcon sx={{ minWidth: 24 }}>
-                      <Box
-                        sx={{
-                          width: 16,
-                          height: 16,
-                          backgroundColor: item.color,
-                          borderRadius: '50%',
-                        }}
+          {/* Legenda personalizzata - nascosta su mobile */}
+          {!isMobile && (
+            <Box sx={{ width: 200 }}>
+              <List dense>
+                {chartData.map((item, index) => {
+                  const percentage = ((item.amount / total) * 100).toFixed(1);
+                  return (
+                    <ListItem key={index} sx={{ py: 0.5 }}>
+                      <ListItemIcon sx={{ minWidth: 24 }}>
+                        <Box
+                          sx={{
+                            width: 16,
+                            height: 16,
+                            backgroundColor: item.color,
+                            borderRadius: '50%',
+                          }}
+                        />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={
+                          <Typography variant="body2" fontWeight="medium" component="span">
+                            {item.category}
+                          </Typography>
+                        }
+                        secondary={
+                          <Typography variant="caption" color="text.secondary" component="span">
+                            {currencyFormatter(item.amount)} ({percentage}%)
+                          </Typography>
+                        }
                       />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={
-                        <Typography variant="body2" fontWeight="medium" component="span">
-                          {item.category}
-                        </Typography>
-                      }
-                      secondary={
-                        <Typography variant="caption" color="text.secondary" component="span">
-                          {currencyFormatter(item.amount)} ({percentage}%)
-                        </Typography>
-                      }
-                    />
-                  </ListItem>
-                );
-              })}
-            </List>
-          </Box>
+                    </ListItem>
+                  );
+                })}
+              </List>
+            </Box>
+          )}
+          
+          {/* Messaggio informativo su mobile */}
+          {isMobile && (
+            <Box sx={{ textAlign: 'center', mt: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                💡 Tocca le sezioni del grafico per vedere i dettagli
+              </Typography>
+            </Box>
+          )}
         </Box>
       </CardContent>
     </Card>
