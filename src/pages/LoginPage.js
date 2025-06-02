@@ -17,12 +17,15 @@ import {
 import { LoginOutlined, FamilyRestroomOutlined } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { loginSchema } from '../utils/validationSchemas';
+import ColdStartNotification from '../components/Common/ColdStartNotification';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isAuthenticated, isLoading, error, clearError } = useAuth();
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [coldStartError, setColdStartError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Controlla se c'è un messaggio dallo state (da JoinFamilyPage)
   const stateMessage = location.state?.message;
@@ -57,15 +60,33 @@ const LoginPage = () => {
     },
   });
 
-  // Gestione submit
-  const onSubmit = async (data) => {
+  // Funzione per verificare se è un errore di cold start
+  const isColdStartError = (error) => {
+    return error && (
+      error.includes('riavviandosi') ||
+      error.includes('timeout') ||
+      error.includes('Errore di connessione')
+    );
+  };
+
+  // Gestione submit con retry automatico per cold start
+  const onSubmit = async (data, isRetry = false) => {
     setSubmitLoading(true);
     clearError();
+    
+    if (!isRetry) {
+      setColdStartError(false);
+      setRetryCount(0);
+    }
 
     try {
       const result = await login(data);
       
       if (result.success) {
+        // Reset stati di errore
+        setColdStartError(false);
+        setRetryCount(0);
+        
         // Login riuscito, controlla se c'è un token di invito pendente E se arriva da invito
         const pendingToken = localStorage.getItem('pendingInviteToken');
         if (pendingToken && isFromInvite) {
@@ -82,18 +103,44 @@ const LoginPage = () => {
         const from = location.state?.from?.pathname || '/dashboard';
         navigate(from, { replace: true });
       } else {
-        // Errore dal server
-        if (result.error.includes('email')) {
-          setError('email', { message: result.error });
-        } else if (result.error.includes('password')) {
-          setError('password', { message: result.error });
+        // Verifica se è un errore di cold start
+        if (isColdStartError(result.error)) {
+          setColdStartError(true);
+          const newRetryCount = retryCount + 1;
+          setRetryCount(newRetryCount);
+          
+          // Retry automatico se non abbiamo superato il limite
+          if (newRetryCount < 3) {
+            setTimeout(() => {
+              onSubmit(data, true);
+            }, 3000);
+            return;
+          }
+        } else {
+          // Errore normale dal server
+          setColdStartError(false);
+          if (result.error.includes('email')) {
+            setError('email', { message: result.error });
+          } else if (result.error.includes('password')) {
+            setError('password', { message: result.error });
+          }
         }
       }
     } catch (err) {
       console.error('Login error:', err);
+      setColdStartError(false);
     } finally {
       setSubmitLoading(false);
     }
+  };
+
+  // Gestione retry manuale
+  const handleRetry = () => {
+    const formData = {
+      email: document.querySelector('input[name="email"]').value,
+      password: document.querySelector('input[name="password"]').value
+    };
+    onSubmit(formData, true);
   };
 
   // Mostra loading durante il caricamento iniziale
@@ -161,8 +208,17 @@ const LoginPage = () => {
             </Alert>
           )}
 
-          {/* Errore globale */}
-          {error && (
+          {/* Notifica Cold Start */}
+          <ColdStartNotification
+            show={coldStartError}
+            onRetry={handleRetry}
+            retryCount={retryCount}
+            maxRetries={2}
+            onDismiss={() => setColdStartError(false)}
+          />
+
+          {/* Errore globale (solo se non è cold start) */}
+          {error && !isColdStartError(error) && (
             <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
               {error}
             </Alert>
