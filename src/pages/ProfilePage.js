@@ -21,6 +21,8 @@ import {
   Paper,
   Tabs,
   Tab,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   EditOutlined,
@@ -54,6 +56,11 @@ const ProfilePage = () => {
   const { user, updateUser, logout, isAuthenticated } = useAuth();
   const { settings, formatDate } = useSettings();
   const navigate = useNavigate();
+  
+  // Responsività
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
   // Stati per dialogs
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
@@ -298,12 +305,25 @@ const ProfilePage = () => {
   };
 
   return (
-    <Box sx={{ maxWidth: 600, mx: 'auto', p: 3 }}>
+    <Box sx={{ 
+      maxWidth: isMobile ? '100%' : 600, 
+      mx: 'auto', 
+      p: isMobile ? 2 : 3 
+    }}>
       {/* Header */}
-      <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+      <Typography 
+        variant={isMobile ? "h5" : "h4"} 
+        component="h1" 
+        fontWeight="bold" 
+        gutterBottom
+      >
         Profilo Utente
       </Typography>
-      <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 4 }}>
+      <Typography 
+        variant={isMobile ? "body2" : "subtitle1"} 
+        color="text.secondary" 
+        sx={{ mb: isMobile ? 3 : 4 }}
+      >
         Gestisci le tue informazioni personali e le impostazioni account
       </Typography>
 
@@ -319,18 +339,22 @@ const ProfilePage = () => {
         </Alert>
       )}
 
-      <Stack spacing={4}>
+      <Stack spacing={isMobile ? 2 : 4}>
         {/* Sezione Avatar e Nome */}
-        <Paper sx={{ p: 3 }}>
-          <Stack direction="row" spacing={3} alignItems="center">
+        <Paper sx={{ p: isMobile ? 2 : 3 }}>
+          <Stack 
+            direction={isSmallMobile ? "column" : "row"} 
+            spacing={isSmallMobile ? 2 : 3} 
+            alignItems={isSmallMobile ? "center" : "center"}
+          >
             <Box sx={{ position: 'relative' }}>
               <Avatar
                 key={user?.avatar || 'default'}
                 src={getAvatarSrc()}
                 sx={{ 
-                  width: 80, 
-                  height: 80, 
-                  fontSize: '2rem',
+                  width: isMobile ? 64 : 80, 
+                  height: isMobile ? 64 : 80, 
+                  fontSize: isMobile ? '1.5rem' : '2rem',
                   bgcolor: 'primary.main'
                 }}
               >
@@ -354,11 +378,19 @@ const ProfilePage = () => {
               </IconButton>
             </Box>
             
-            <Box>
-              <Typography variant="h5" fontWeight="bold">
+            <Box sx={{ textAlign: isSmallMobile ? 'center' : 'left' }}>
+              <Typography 
+                variant={isMobile ? "h6" : "h5"} 
+                fontWeight="bold"
+              >
                 {user?.name}
               </Typography>
-              <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+              <Stack 
+                direction={isSmallMobile ? "column" : "row"} 
+                spacing={1} 
+                sx={{ mt: 1 }}
+                alignItems={isSmallMobile ? "center" : "flex-start"}
+              >
                 {getUserFamilyRole() && (
                   <Chip
                     icon={getUserFamilyRole() === 'admin' ? <AdminPanelSettingsOutlined /> : <PersonOutlined />}
@@ -381,19 +413,46 @@ const ProfilePage = () => {
         </Paper>
 
         {/* Sezione Informazioni Account */}
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Paper sx={{ p: isMobile ? 2 : 3 }}>
+          <Typography 
+            variant="h6" 
+            gutterBottom 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              fontSize: isMobile ? '1.1rem' : '1.25rem'
+            }}
+          >
             <EmailOutlined color="primary" />
             Informazioni Account
           </Typography>
           
           <Stack spacing={2}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box>
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: isSmallMobile ? 'flex-start' : 'center',
+              flexDirection: isSmallMobile ? 'column' : 'row',
+              gap: isSmallMobile ? 1 : 0
+            }}>
+              <Box sx={{ flex: 1 }}>
                 <Typography variant="body2" color="text.secondary">Email</Typography>
-                <Typography variant="body1">{user?.email}</Typography>
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    wordBreak: 'break-word',
+                    fontSize: isMobile ? '0.9rem' : '1rem'
+                  }}
+                >
+                  {user?.email}
+                </Typography>
               </Box>
-              <IconButton onClick={() => setEmailDialogOpen(true)} title="Modifica email">
+              <IconButton 
+                onClick={() => setEmailDialogOpen(true)} 
+                title="Modifica email"
+                size={isMobile ? "small" : "medium"}
+              >
                 <EditOutlined />
               </IconButton>
             </Box>
@@ -402,20 +461,39 @@ const ProfilePage = () => {
             
             <Box>
               <Typography variant="body2" color="text.secondary">Registrato</Typography>
-              <Typography variant="body1">{formatDate(user?.createdAt)}</Typography>
+              <Typography 
+                variant="body1"
+                sx={{ fontSize: isMobile ? '0.9rem' : '1rem' }}
+              >
+                {formatDate(user?.createdAt)}
+              </Typography>
             </Box>
             
             <Box>
               <Typography variant="body2" color="text.secondary">Ultimo accesso</Typography>
-              <Typography variant="body1">{formatDateTime(user?.lastLogin)}</Typography>
+              <Typography 
+                variant="body1"
+                sx={{ fontSize: isMobile ? '0.9rem' : '1rem' }}
+              >
+                {formatDateTime(user?.lastLogin)}
+              </Typography>
             </Box>
           </Stack>
         </Paper>
 
         {/* Sezione Famiglia */}
         {familyData && (
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Paper sx={{ p: isMobile ? 2 : 3 }}>
+            <Typography 
+              variant="h6" 
+              gutterBottom 
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1,
+                fontSize: isMobile ? '1.1rem' : '1.25rem'
+              }}
+            >
               <FamilyRestroomOutlined color="primary" />
               Famiglia
             </Typography>
@@ -428,19 +506,32 @@ const ProfilePage = () => {
               <Stack spacing={2}>
                 <Box>
                   <Typography variant="body2" color="text.secondary">Nome famiglia</Typography>
-                  <Typography variant="body1">{familyData.name}</Typography>
+                  <Typography 
+                    variant="body1"
+                    sx={{ fontSize: isMobile ? '0.9rem' : '1rem' }}
+                  >
+                    {familyData.name}
+                  </Typography>
                 </Box>
                 
                 <Box>
                   <Typography variant="body2" color="text.secondary">Ruolo</Typography>
-                  <Typography variant="body1">
+                  <Typography 
+                    variant="body1"
+                    sx={{ fontSize: isMobile ? '0.9rem' : '1rem' }}
+                  >
                     {getUserFamilyRole() === 'admin' ? 'Amministratore' : 'Membro'}
                   </Typography>
                 </Box>
                 
                 <Box>
                   <Typography variant="body2" color="text.secondary">Membro dal</Typography>
-                  <Typography variant="body1">{formatDate(getUserJoinDate())}</Typography>
+                  <Typography 
+                    variant="body1"
+                    sx={{ fontSize: isMobile ? '0.9rem' : '1rem' }}
+                  >
+                    {formatDate(getUserJoinDate())}
+                  </Typography>
                 </Box>
               </Stack>
             )}
@@ -448,8 +539,17 @@ const ProfilePage = () => {
         )}
 
         {/* Sezione Sicurezza */}
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Paper sx={{ p: isMobile ? 2 : 3 }}>
+          <Typography 
+            variant="h6" 
+            gutterBottom 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              fontSize: isMobile ? '1.1rem' : '1.25rem'
+            }}
+          >
             <SecurityOutlined color="primary" />
             Sicurezza
           </Typography>
@@ -459,14 +559,24 @@ const ProfilePage = () => {
             startIcon={<SecurityOutlined />}
             onClick={() => setPasswordDialogOpen(true)}
             fullWidth
+            size={isMobile ? "medium" : "large"}
           >
             Cambia Password
           </Button>
         </Paper>
 
         {/* Sezione Privacy e Dati */}
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Paper sx={{ p: isMobile ? 2 : 3 }}>
+          <Typography 
+            variant="h6" 
+            gutterBottom 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              fontSize: isMobile ? '1.1rem' : '1.25rem'
+            }}
+          >
             <DownloadOutlined color="primary" />
             Privacy e Dati
           </Typography>
@@ -478,6 +588,7 @@ const ProfilePage = () => {
               onClick={handleExportData}
               fullWidth
               disabled={loading}
+              size={isMobile ? "medium" : "large"}
             >
               Esporta Dati
             </Button>
@@ -488,6 +599,7 @@ const ProfilePage = () => {
               startIcon={<DeleteOutlined />}
               onClick={() => setDeleteDialogOpen(true)}
               fullWidth
+              size={isMobile ? "medium" : "large"}
             >
               Elimina Account
             </Button>
@@ -496,7 +608,13 @@ const ProfilePage = () => {
       </Stack>
 
       {/* Dialog Cambio Password */}
-      <Dialog open={passwordDialogOpen} onClose={() => setPasswordDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={passwordDialogOpen} 
+        onClose={() => setPasswordDialogOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+        fullScreen={isSmallMobile}
+      >
         <DialogTitle>Cambia Password</DialogTitle>
         <form onSubmit={handlePasswordSubmit(onPasswordSubmit)}>
           <DialogContent>
@@ -508,6 +626,7 @@ const ProfilePage = () => {
               margin="normal"
               error={!!passwordErrors.currentPassword}
               helperText={passwordErrors.currentPassword?.message}
+              size={isMobile ? "small" : "medium"}
             />
             
             <TextField
@@ -518,6 +637,7 @@ const ProfilePage = () => {
               margin="normal"
               error={!!passwordErrors.newPassword}
               helperText={passwordErrors.newPassword?.message}
+              size={isMobile ? "small" : "medium"}
             />
             
             <TextField
@@ -528,9 +648,10 @@ const ProfilePage = () => {
               margin="normal"
               error={!!passwordErrors.confirmNewPassword}
               helperText={passwordErrors.confirmNewPassword?.message}
+              size={isMobile ? "small" : "medium"}
             />
           </DialogContent>
-          <DialogActions>
+          <DialogActions sx={{ p: isMobile ? 2 : 1 }}>
             <Button onClick={() => setPasswordDialogOpen(false)}>
               Annulla
             </Button>
@@ -547,7 +668,13 @@ const ProfilePage = () => {
       </Dialog>
 
       {/* Dialog Cambio Email */}
-      <Dialog open={emailDialogOpen} onClose={() => setEmailDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={emailDialogOpen} 
+        onClose={() => setEmailDialogOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+        fullScreen={isSmallMobile}
+      >
         <DialogTitle>Modifica Email</DialogTitle>
         <form onSubmit={handleEmailSubmit(onEmailSubmit)}>
           <DialogContent>
@@ -559,9 +686,10 @@ const ProfilePage = () => {
               margin="normal"
               error={!!emailErrors.email}
               helperText={emailErrors.email?.message}
+              size={isMobile ? "small" : "medium"}
             />
           </DialogContent>
-          <DialogActions>
+          <DialogActions sx={{ p: isMobile ? 2 : 1 }}>
             <Button onClick={() => setEmailDialogOpen(false)}>
               Annulla
             </Button>
@@ -578,10 +706,21 @@ const ProfilePage = () => {
       </Dialog>
 
       {/* Dialog Avatar */}
-      <Dialog open={avatarDialogOpen} onClose={() => setAvatarDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={avatarDialogOpen} 
+        onClose={() => setAvatarDialogOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+        fullScreen={isSmallMobile}
+      >
         <DialogTitle>Cambia Avatar</DialogTitle>
         <DialogContent>
-          <Tabs value={avatarMethod} onChange={(e, newValue) => setAvatarMethod(newValue)} sx={{ mb: 3 }}>
+          <Tabs 
+            value={avatarMethod} 
+            onChange={(e, newValue) => setAvatarMethod(newValue)} 
+            sx={{ mb: 3 }}
+            variant={isMobile ? "fullWidth" : "standard"}
+          >
             <Tab label="Carica File" value="upload" />
             <Tab label="Inserisci URL" value="url" />
           </Tabs>
@@ -594,7 +733,11 @@ const ProfilePage = () => {
 
           {avatarMethod === 'upload' ? (
             <Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              <Typography 
+                variant="body2" 
+                color="text.secondary" 
+                sx={{ mb: 2, fontSize: isMobile ? '0.8rem' : '0.875rem' }}
+              >
                 Seleziona un'immagine dal tuo computer (max 5MB)
               </Typography>
               <Button
@@ -602,6 +745,7 @@ const ProfilePage = () => {
                 component="label"
                 fullWidth
                 disabled={loading}
+                size={isMobile ? "medium" : "large"}
               >
                 Scegli File
                 <input
@@ -614,7 +758,11 @@ const ProfilePage = () => {
             </Box>
           ) : (
             <Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              <Typography 
+                variant="body2" 
+                color="text.secondary" 
+                sx={{ mb: 2, fontSize: isMobile ? '0.8rem' : '0.875rem' }}
+              >
                 Inserisci l'URL di un'immagine (JPEG, PNG, WebP, GIF)
               </Typography>
               <TextField
@@ -624,11 +772,12 @@ const ProfilePage = () => {
                 onChange={(e) => setAvatarUrl(e.target.value)}
                 placeholder="https://esempio.com/immagine.jpg"
                 disabled={loading}
+                size={isMobile ? "small" : "medium"}
               />
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ p: isMobile ? 2 : 1 }}>
           <Button onClick={() => setAvatarDialogOpen(false)}>
             Annulla
           </Button>
@@ -646,12 +795,21 @@ const ProfilePage = () => {
       </Dialog>
 
       {/* Dialog Eliminazione Account */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={deleteDialogOpen} 
+        onClose={() => setDeleteDialogOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+        fullScreen={isSmallMobile}
+      >
         <DialogTitle color="error.main">Elimina Account</DialogTitle>
         <form onSubmit={handleDeleteSubmit(handleDeleteAccount)}>
           <DialogContent>
             <Alert severity="warning" sx={{ mb: 2 }}>
-              <Typography variant="body2">
+              <Typography 
+                variant="body2"
+                sx={{ fontSize: isMobile ? '0.8rem' : '0.875rem' }}
+              >
                 <strong>Attenzione!</strong> Questa azione è irreversibile.
               </Typography>
             </Alert>
@@ -662,17 +820,36 @@ const ProfilePage = () => {
               </Alert>
             )}
             
-            <Typography variant="body2" paragraph>
+            <Typography 
+              variant="body2" 
+              paragraph
+              sx={{ fontSize: isMobile ? '0.8rem' : '0.875rem' }}
+            >
               Eliminando il tuo account:
             </Typography>
-            <Typography variant="body2" component="ul" sx={{ pl: 2, mb: 2 }}>
+            <Typography 
+              variant="body2" 
+              component="ul" 
+              sx={{ 
+                pl: 2, 
+                mb: 2,
+                fontSize: isMobile ? '0.8rem' : '0.875rem'
+              }}
+            >
               <li>Perderai accesso a tutti i tuoi dati</li>
               <li>Le tue spese e entrate saranno rimosse</li>
               <li>Se sei l'unico membro della famiglia, la famiglia sarà eliminata</li>
               <li>Se sei amministratore, i privilegi saranno trasferiti automaticamente</li>
             </Typography>
             
-            <Typography variant="body2" sx={{ mb: 2, fontWeight: 'bold' }}>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                mb: 2, 
+                fontWeight: 'bold',
+                fontSize: isMobile ? '0.8rem' : '0.875rem'
+              }}
+            >
               Inserisci la tua password per confermare l'eliminazione:
             </Typography>
             
@@ -685,9 +862,10 @@ const ProfilePage = () => {
               error={!!deletePasswordErrors.password}
               helperText={deletePasswordErrors.password?.message}
               autoFocus
+              size={isMobile ? "small" : "medium"}
             />
           </DialogContent>
-          <DialogActions>
+          <DialogActions sx={{ p: isMobile ? 2 : 1 }}>
             <Button onClick={() => {
               setDeleteDialogOpen(false);
               resetDeleteForm();
